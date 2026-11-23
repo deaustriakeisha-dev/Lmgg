@@ -1,0 +1,3158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>CHAOS ON CLYDE STREET — 3D Loud House Fan Game</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka:wght@500;600;700&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #181828;
+      --orange: #ff6b2b;
+      --yellow: #ffd23f;
+      --teal: #1ecbe1;
+      --pink: #ff5d8f;
+      --purple: #845ec2;
+      --green: #38b000;
+      --cream: #fffdf5;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #181828;
+      font-family: 'Fredoka', sans-serif;
+      color: var(--ink);
+    }
+
+    .font-bangers {
+      font-family: 'Bangers', cursive;
+      letter-spacing: 1.5px;
+    }
+
+    .font-comic {
+      font-family: 'Comic Neue', cursive;
+    }
+
+    /* Comic Book Styling */
+    .comic-panel {
+      background: var(--cream);
+      border: 4px solid var(--ink);
+      box-shadow: 6px 6px 0px var(--ink);
+      border-radius: 18px;
+    }
+
+    .comic-panel-sm {
+      background: var(--cream);
+      border: 3px solid var(--ink);
+      box-shadow: 4px 4px 0px var(--ink);
+      border-radius: 14px;
+    }
+
+    .comic-btn {
+      border: 3px solid var(--ink);
+      box-shadow: 4px 4px 0px var(--ink);
+      border-radius: 14px;
+      font-weight: 700;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.15s ease;
+      cursor: pointer;
+    }
+
+    .comic-btn:hover:not(:disabled) {
+      transform: translate(-1px, -1px);
+      box-shadow: 5px 5px 0px var(--ink);
+      filter: brightness(1.05);
+    }
+
+    .comic-btn:active:not(:disabled) {
+      transform: translate(3px, 3px);
+      box-shadow: 1px 1px 0px var(--ink);
+    }
+
+    .comic-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .halftone-bg {
+      background-color: #ff8c42;
+      background-image: radial-gradient(#ff6b2b 22%, transparent 23%), radial-gradient(#ffd23f 22%, transparent 23%);
+      background-size: 28px 28px;
+      background-position: 0 0, 14px 14px;
+    }
+
+    .halftone-blue {
+      background-color: #1ecbe1;
+      background-image: radial-gradient(#149cb0 20%, transparent 21%);
+      background-size: 22px 22px;
+    }
+
+    .text-outline {
+      text-shadow:
+        -2px -2px 0 var(--ink),
+         2px -2px 0 var(--ink),
+        -2px  2px 0 var(--ink),
+         2px  2px 0 var(--ink),
+         4px  4px 0 var(--ink);
+    }
+
+    .text-outline-sm {
+      text-shadow:
+        -1.5px -1.5px 0 var(--ink),
+         1.5px -1.5px 0 var(--ink),
+        -1.5px  1.5px 0 var(--ink),
+         1.5px  1.5px 0 var(--ink);
+    }
+
+    #game-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 1;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1e9d2;
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--orange);
+      border: 2px solid var(--ink);
+      border-radius: 10px;
+    }
+
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px) rotate(-1deg); }
+      50% { transform: translateY(-8px) rotate(1deg); }
+    }
+
+    @keyframes spinSlow {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes driveVanzilla {
+      0% { transform: translateX(-120%) rotate(-1deg); }
+      50% { transform: translateX(0%) rotate(1deg); }
+      100% { transform: translateX(120%) rotate(-1deg); }
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.75); opacity: 0; }
+      80% { transform: scale(1.04); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .animate-float { animation: floatSlow 3.2s ease-in-out infinite; }
+    .animate-spin-slow { animation: spinSlow 6s linear infinite; }
+    .animate-pop { animation: popIn 0.25s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+    /* Rhythm lane glow */
+    .lane-hit {
+      transform: scale(1.15);
+      filter: brightness(1.4);
+    }
+
+    /* Mobile Joystick */
+    #joystick-zone {
+      touch-action: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 3D WebGL Canvas -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Floating 3D World Labels Container -->
+  <div id="world-labels" class="fixed inset-0 pointer-events-none z-10 overflow-hidden"></div>
+
+  <!-- AUTOSAVE BADGE -->
+  <div id="autosave-badge" class="fixed top-4 right-4 z-50 pointer-events-none opacity-0 transition-opacity duration-300">
+    <div class="bg-[#ffd23f] border-3 border-[#181828] px-3 py-1.5 rounded-full shadow-[3px_3px_0_#181828] flex items-center gap-2 font-bangers text-lg tracking-wider">
+      <span class="inline-block w-3 h-3 rounded-full bg-[#38b000] border-2 border-[#181828] animate-ping"></span>
+      <span>COMIC SAVED!</span>
+    </div>
+  </div>
+
+  <!-- TOAST / REWARD POPUP BANNER -->
+  <div id="toast-container" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none w-full max-w-md px-4"></div>
+
+  <!-- =========================================================
+       SCREEN 1: LOADING SCREEN (IN-WORLD VANZILLA CHAOS)
+       ========================================================= -->
+  <div id="loading-screen" class="fixed inset-0 z-50 halftone-bg flex flex-col items-center justify-center p-6 transition-opacity duration-500">
+    <div class="comic-panel max-w-lg w-full p-6 md:p-8 text-center relative overflow-hidden">
+      <div class="inline-block bg-[#1ecbe1] border-3 border-[#181828] px-4 py-1 rounded-full font-bold text-xs uppercase tracking-widest mb-3 shadow-[3px_3px_0_#181828]">
+        1216 Franklin Avenue • Royal Woods
+      </div>
+      <h1 class="font-bangers text-4xl md:text-6xl text-[#ff6b2b] text-outline leading-none mb-2">
+        CHAOS ON CLYDE STREET
+      </h1>
+      <p class="font-comic font-bold text-sm md:text-base text-slate-700 mb-6">
+        11 Siblings. 1 Bathroom. Zero Chill.
+      </p>
+
+      <!-- Animated In-World Loader Graphic -->
+      <div class="relative h-28 bg-[#87ceeb] border-4 border-[#181828] rounded-2xl overflow-hidden mb-5 flex items-end">
+        <!-- Clouds -->
+        <div class="absolute top-3 left-8 w-14 h-5 bg-white rounded-full border-2 border-[#181828]"></div>
+        <div class="absolute top-5 right-12 w-16 h-6 bg-white rounded-full border-2 border-[#181828]"></div>
+        <!-- Road -->
+        <div class="w-full h-7 bg-[#4a4e69] border-t-3 border-[#181828] relative">
+          <div class="w-full border-t-2 border-dashed border-[#ffd23f] mt-2"></div>
+        </div>
+        <!-- Vanzilla SVG -->
+        <div id="loader-vanzilla" class="absolute bottom-4 left-1/2 -translate-x-1/2 animate-float">
+          <svg width="130" height="68" viewBox="0 0 130 68">
+            <rect x="10" y="14" width="106" height="38" rx="10" fill="#5bc0eb" stroke="#181828" stroke-width="4"/>
+            <path d="M88 14 L112 14 L120 32 L120 52 L88 52 Z" fill="#5bc0eb" stroke="#181828" stroke-width="4"/>
+            <rect x="20" y="20" width="22" height="14" rx="3" fill="#fffdf5" stroke="#181828" stroke-width="3"/>
+            <rect x="48" y="20" width="22" height="14" rx="3" fill="#fffdf5" stroke="#181828" stroke-width="3"/>
+            <path d="M92 20 L108 20 L113 33 L92 33 Z" fill="#fffdf5" stroke="#181828" stroke-width="3"/>
+            <rect x="12" y="38" width="106" height="6" fill="#ffd23f" stroke="#181828" stroke-width="2"/>
+            <circle cx="34" cy="54" r="10" fill="#2b2d42" stroke="#181828" stroke-width="4"/>
+            <circle cx="34" cy="54" r="4" fill="#edf2f4"/>
+            <circle cx="96" cy="54" r="10" fill="#2b2d42" stroke="#181828" stroke-width="4"/>
+            <circle cx="96" cy="54" r="4" fill="#edf2f4"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Progress Bar Styled as Comic Meter -->
+      <div class="w-full h-7 bg-[#e2e8f0] border-3 border-[#181828] rounded-full overflow-hidden p-1 mb-3 shadow-inner">
+        <div id="loading-bar" class="h-full bg-gradient-to-r from-[#ff6b2b] via-[#ffd23f] to-[#38b000] rounded-full transition-all duration-200" style="width: 10%;"></div>
+      </div>
+      <p id="loading-quip" class="font-bold text-sm text-[#181828] min-h-[24px]">
+        Hiding Lincoln's Ace Savvy comics from Lola...
+      </p>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       SCREEN 2: TITLE & PLAYER PROFILE SLATE
+       ========================================================= -->
+  <div id="title-screen" class="fixed inset-0 z-40 hidden overflow-y-auto bg-[#181828]/65 backdrop-blur-xs p-4 md:p-8">
+    <div class="max-w-5xl mx-auto my-auto min-h-full flex flex-col justify-center gap-6">
+      <!-- Top Title Banner -->
+      <div class="text-center animate-pop">
+        <div class="inline-flex items-center gap-2 bg-[#ffd23f] border-3 border-[#181828] px-4 py-1 rounded-full shadow-[4px_4px_0_#181828] mb-2">
+          <span class="text-sm font-extrabold uppercase tracking-wider">Interactive 3D Fan Adventure</span>
+        </div>
+        <h1 class="font-bangers text-5xl sm:text-7xl md:text-8xl text-[#ff6b2b] text-outline leading-none tracking-wide">
+          CHAOS ON CLYDE STREET
+        </h1>
+        <p class="text-white font-bold text-base sm:text-lg mt-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.9)]">
+          Step inside the Loud House, survive the Saturday morning madness, and become an honorary Loud!
+        </p>
+      </div>
+
+      <!-- Profile Selection & Creation Slate -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        <!-- Existing Profiles List -->
+        <div class="lg:col-span-7 comic-panel p-5 md:p-6 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between border-b-3 border-[#181828] pb-3 mb-4">
+              <h2 class="font-bangers text-3xl text-[#181828] flex items-center gap-2">
+                <span>📁</span> HONORARY FAMILY PROFILES
+              </h2>
+              <span id="profile-count-badge" class="bg-[#1ecbe1] border-2 border-[#181828] px-3 py-0.5 rounded-full text-xs font-bold">
+                0 Saves
+              </span>
+            </div>
+
+            <div id="profiles-list" class="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t-2 border-dashed border-slate-400 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 font-semibold">
+            <span>💾 Progress auto-saves locally per profile in your browser.</span>
+            <button id="btn-title-audio" class="comic-btn bg-[#ffd23f] px-3 py-1 text-xs text-[#181828]">
+              🔊 Sound: ON
+            </button>
+          </div>
+        </div>
+
+        <!-- Create New Profile Card -->
+        <div class="lg:col-span-5 comic-panel p-5 md:p-6 bg-[#fff8e7] flex flex-col justify-between">
+          <div>
+            <h2 class="font-bangers text-3xl text-[#ff6b2b] text-outline-sm border-b-3 border-[#181828] pb-3 mb-4">
+              ✨ NEW HOUSEGUEST PASS
+            </h2>
+
+            <label class="block text-xs font-extrabold uppercase tracking-wider mb-1 text-slate-700">
+              Your First Name / Nickname
+            </label>
+            <input
+              id="new-profile-name"
+              type="text"
+              maxlength="16"
+              placeholder="e.g. Jordan, Sam, Ace..."
+              class="w-full px-4 py-3 rounded-xl border-3 border-[#181828] bg-white font-bold text-lg focus:outline-none focus:ring-4 focus:ring-[#ffd23f] mb-4"
+            />
+
+            <label class="block text-xs font-extrabold uppercase tracking-wider mb-2 text-slate-700">
+              Pick Your Signature Shirt Color
+            </label>
+            <div id="color-picker-row" class="flex flex-wrap gap-2.5 mb-5">
+              <button type="button" data-color="#ff6b2b" class="color-swatch w-10 h-10 rounded-full border-3 border-[#181828] bg-[#ff6b2b] ring-4 ring-[#181828]" title="Lincoln Orange"></button>
+              <button type="button" data-color="#1ecbe1" class="color-swatch w-10 h-10 rounded-full border-3 border-[#181828] bg-[#1ecbe1]" title="Lori Aqua"></button>
+              <button type="button" data-color="#845ec2" class="color-swatch w-10 h-10 rounded-full border-3 border-[#181828] bg-[#845ec2]" title="Luna Purple"></button>
+              <button type="button" data-color="#e63946" class="color-swatch w-10 h-10 rounded-full border-3 border-[#181828] bg-[#e63946]" title="Lynn Red"></button>
+              <button type="button" data-color="#38b000" class="color-swatch w-10 h-10 rounded-full border-3 border-[#181828] bg-[#38b000]" title="Lisa Green"></button>
+              <button type="button" data-color="#ff5d8f" class="color-swatch w-10 h-10 rounded-full border-3 border-[#181828] bg-[#ff5d8f]" title="Lola Pink"></button>
+              <button type="button" data-color="#ffd23f" class="color-swatch w-10 h-10 rounded-full border-3 border-[#181828] bg-[#ffd23f]" title="Luan Yellow"></button>
+            </div>
+          </div>
+
+          <button id="btn-create-profile" class="comic-btn w-full py-3.5 bg-[#38b000] text-white font-bangers text-2xl tracking-wider">
+            ENTER 1216 FRANKLIN AVE! 🚀
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       SCREEN 3: MAIN IN-GAME HUD
+       ========================================================= -->
+  <div id="game-hud" class="fixed inset-0 z-20 pointer-events-none hidden">
+    <!-- Top Bar -->
+    <div class="p-3 md:p-4 flex flex-wrap items-start justify-between gap-2">
+      <!-- Left: Profile Badge & Room Location -->
+      <div class="pointer-events-auto flex items-center gap-2.5">
+        <div class="comic-panel-sm px-3.5 py-2 flex items-center gap-3 bg-[#fffdf5]">
+          <div id="hud-avatar-dot" class="w-9 h-9 rounded-full border-3 border-[#181828] bg-[#ff6b2b] flex items-center justify-center font-bangers text-white text-xl shadow-[2px_2px_0_#181828]">
+            L
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="hud-player-name" class="font-bold text-sm md:text-base leading-none">Player</span>
+              <span id="hud-rank-badge" class="bg-[#ffd23f] border-2 border-[#181828] px-2 py-0.2 rounded-full text-[10px] font-extrabold uppercase">
+                Rookie Guest
+              </span>
+            </div>
+            <div class="flex items-center gap-3 mt-1 text-xs font-bold text-slate-700">
+              <span>⚡ <span id="hud-chaos-pts">0</span> Chaos Pts</span>
+              <span>⭐ <span id="hud-completion">0</span>%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Current Room Pill -->
+        <div class="comic-panel-sm px-3.5 py-2 bg-[#1ecbe1] hidden sm:flex items-center gap-2">
+          <span class="text-lg">🏠</span>
+          <div>
+            <div class="text-[10px] font-extrabold uppercase tracking-wider opacity-80">Current Zone</div>
+            <div id="hud-room-name" class="font-bangers text-xl leading-none tracking-wide">Front Yard & Clyde St.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Action Menu Buttons -->
+      <div class="pointer-events-auto flex flex-wrap items-center gap-1.5 md:gap-2">
+        <button data-modal="map" class="hud-nav-btn comic-btn bg-[#ffd23f] px-3 py-2 text-xs md:text-sm flex items-center gap-1.5" title="House Map & Quick Travel">
+          <span>🗺️</span><span class="hidden md:inline">Map</span>
+        </button>
+        <button data-modal="quests" class="hud-nav-btn comic-btn bg-[#ff6b2b] text-white px-3 py-2 text-xs md:text-sm flex items-center gap-1.5" title="Quest Journal">
+          <span>📋</span><span class="hidden md:inline">Quests</span>
+          <span id="hud-quest-count" class="bg-[#181828] text-[#ffd23f] px-1.5 rounded-full text-xs">0/12</span>
+        </button>
+        <button data-modal="catalog" class="hud-nav-btn comic-btn bg-[#ff5d8f] text-white px-3 py-2 text-xs md:text-sm flex items-center gap-1.5" title="Stickers, Items & Achievements">
+          <span>🏆</span><span class="hidden md:inline">Catalog</span>
+        </button>
+        <button id="btn-camera-toggle" class="comic-btn bg-[#845ec2] text-white px-3 py-2 text-xs md:text-sm flex items-center gap-1.5" title="Switch Camera Angle">
+          <span>🎥</span><span class="hidden lg:inline">View</span>
+        </button>
+        <button data-modal="settings" class="hud-nav-btn comic-btn bg-white px-3 py-2 text-xs md:text-sm flex items-center gap-1.5" title="Settings & Profiles">
+          <span>⚙️</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Room Name Banner -->
+    <div class="sm:hidden px-3">
+      <div class="inline-block comic-panel-sm px-3 py-1 bg-[#1ecbe1] font-bangers text-base tracking-wide">
+        📍 <span id="hud-room-name-mobile">Front Yard & Clyde St.</span>
+      </div>
+    </div>
+
+    <!-- Active Objective Tracker Pill (Top-Left under profile) -->
+    <div class="px-3 md:px-4 mt-2">
+      <div id="active-objective-box" class="pointer-events-auto inline-block comic-panel-sm bg-[#fff8e7]/95 px-3.5 py-2 max-w-xs md:max-w-sm">
+        <div class="text-[10px] font-extrabold uppercase tracking-wider text-[#ff6b2b]">Current Objective</div>
+        <div id="hud-objective-text" class="text-xs md:text-sm font-bold text-[#181828] leading-snug">
+          Talk to Lincoln or Clyde to start surviving the Loud House!
+        </div>
+      </div>
+    </div>
+
+    <!-- Center-Bottom Context Interaction Prompt -->
+    <div id="interact-prompt" class="fixed bottom-28 md:bottom-10 left-1/2 -translate-x-1/2 pointer-events-auto hidden">
+      <button id="btn-interact-prompt" class="comic-btn bg-[#ffd23f] px-5 py-2.5 flex items-center gap-2.5 animate-bounce">
+        <span class="bg-[#181828] text-white font-bangers px-2 py-0.5 rounded text-sm">E / TAP</span>
+        <span id="interact-prompt-text" class="font-bold text-sm md:text-base">Talk to Lincoln</span>
+      </button>
+    </div>
+
+    <!-- Desktop Controls Hint -->
+    <div class="hidden md:flex fixed bottom-3 left-4 pointer-events-none">
+      <div class="bg-[#181828]/80 text-white px-3 py-1.5 rounded-xl text-xs font-semibold backdrop-blur-xs border border-white/20">
+        WASD / Arrows: Walk • Click Floor: Move • Click Character/Item or [E]: Interact • Drag Right-Click / Q-E: Orbit Cam
+      </div>
+    </div>
+
+    <!-- Mobile Touch Controls (Joystick + Action Buttons) -->
+    <div id="mobile-controls" class="md:hidden fixed bottom-4 inset-x-4 flex items-end justify-between pointer-events-none">
+      <!-- Virtual Joystick -->
+      <div id="joystick-zone" class="pointer-events-auto w-28 h-28 rounded-full bg-[#181828]/35 border-3 border-white/60 relative flex items-center justify-center backdrop-blur-xs">
+        <div id="joystick-knob" class="w-12 h-12 rounded-full bg-[#ffd23f] border-3 border-[#181828] shadow-md transition-transform duration-75"></div>
+      </div>
+
+      <!-- Mobile Action Buttons -->
+      <div class="pointer-events-auto flex flex-col gap-2 items-end">
+        <button id="btn-mobile-cam" class="comic-btn bg-[#845ec2] text-white w-12 h-12 rounded-full flex items-center justify-center text-lg">
+          🎥
+        </button>
+        <button id="btn-mobile-act" class="comic-btn bg-[#ff6b2b] text-white px-5 py-3.5 rounded-2xl font-bangers text-xl tracking-wider">
+          ACT! ⚡
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       DIALOGUE & CHARACTER INTERACTION MODAL
+       ========================================================= -->
+  <div id="dialogue-modal" class="fixed inset-0 z-30 hidden bg-[#181828]/55 backdrop-blur-xs flex items-end md:items-center justify-center p-3 md:p-6">
+    <div class="comic-panel w-full max-w-2xl p-5 md:p-6 relative animate-pop bg-[#fffdf5]">
+      <!-- Character Header -->
+      <div class="flex items-center gap-3.5 mb-3">
+        <div id="dlg-avatar" class="w-14 h-14 md:w-16 md:h-16 rounded-2xl border-3 border-[#181828] flex items-center justify-center text-3xl shadow-[3px_3px_0_#181828] shrink-0">
+          👦
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h3 id="dlg-name" class="font-bangers text-2xl md:text-3xl tracking-wide leading-none">Lincoln Loud</h3>
+            <span id="dlg-role" class="bg-[#ffd23f] border-2 border-[#181828] px-2.5 py-0.5 rounded-full text-xs font-extrabold">
+              The Man With The Plan
+            </span>
+          </div>
+          <p id="dlg-status" class="text-xs font-bold text-slate-500 mt-1">Quest Available</p>
+        </div>
+        <button id="btn-close-dialogue" class="comic-btn bg-slate-200 w-10 h-10 flex items-center justify-center font-bold text-lg shrink-0">
+          ✕
+        </button>
+      </div>
+
+      <!-- Speech Bubble Box -->
+      <div class="bg-white border-3 border-[#181828] rounded-2xl p-4 mb-4 relative">
+        <p id="dlg-text" class="font-comic font-bold text-base md:text-lg text-[#181828] leading-relaxed">
+          "Welcome to 1216 Franklin Avenue! Everyone's Saturday schedule just exploded..."
+        </p>
+      </div>
+
+      <!-- Choices / Action Buttons -->
+      <div id="dlg-actions" class="flex flex-col sm:flex-row flex-wrap gap-2.5 justify-end">
+        <!-- Dynamically populated -->
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       MINI-GAME ARENA MODAL (7 PLAYABLE MINI-GAMES)
+       ========================================================= -->
+  <div id="minigame-modal" class="fixed inset-0 z-40 hidden bg-[#181828]/80 backdrop-blur-sm flex items-center justify-center p-3 md:p-6">
+    <div class="comic-panel w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden animate-pop bg-[#fffdf5]">
+      <!-- Mini-Game Header -->
+      <div id="mg-header" class="px-5 py-3.5 bg-[#845ec2] text-white border-b-4 border-[#181828] flex items-center justify-between gap-3">
+        <div>
+          <span id="mg-host-tag" class="text-[11px] font-extrabold uppercase tracking-wider bg-[#181828] text-[#ffd23f] px-2.5 py-0.5 rounded-full">
+            Luna's Challenge
+          </span>
+          <h3 id="mg-title" class="font-bangers text-2xl md:text-3xl tracking-wide mt-0.5 text-outline-sm">
+            ROCKIN' RHYTHM JAM
+          </h3>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="bg-[#181828] px-3 py-1 rounded-xl text-center">
+            <div class="text-[10px] uppercase text-slate-300 font-bold">Score</div>
+            <div id="mg-score" class="font-bangers text-xl text-[#ffd23f]">0</div>
+          </div>
+          <div class="bg-[#181828] px-3 py-1 rounded-xl text-center">
+            <div class="text-[10px] uppercase text-slate-300 font-bold">Time / Goal</div>
+            <div id="mg-timer" class="font-bangers text-xl text-[#1ecbe1]">30s</div>
+          </div>
+          <button id="btn-exit-minigame" class="comic-btn bg-[#e63946] text-white px-3 py-1.5 text-sm">
+            Quit
+          </button>
+        </div>
+      </div>
+
+      <!-- Mini-Game Instructions Bar -->
+      <div id="mg-instructions" class="px-5 py-2 bg-[#ffd23f] border-b-3 border-[#181828] text-xs md:text-sm font-bold text-[#181828] flex items-center justify-between">
+        <span id="mg-instruction-text">Hit the notes as they cross the target line!</span>
+        <span id="mg-best-score" class="text-xs font-extrabold">Best: 0</span>
+      </div>
+
+      <!-- Dynamic Mini-Game Play Area -->
+      <div id="mg-body" class="p-4 md:p-6 flex-1 overflow-y-auto flex flex-col items-center justify-center min-h-[320px] relative">
+        <!-- Rendered by MiniGameEngine -->
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       GENERAL HUB MODAL (MAP / QUESTS / CATALOG / SETTINGS)
+       ========================================================= -->
+  <div id="hub-modal" class="fixed inset-0 z-30 hidden bg-[#181828]/70 backdrop-blur-xs flex items-center justify-center p-3 md:p-6">
+    <div class="comic-panel w-full max-w-4xl max-h-[88vh] flex flex-col overflow-hidden animate-pop bg-[#fffdf5]">
+      <!-- Tabs Header -->
+      <div class="bg-[#181828] text-white px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-wrap gap-1.5">
+          <button data-tab="map" class="hub-tab comic-btn px-3.5 py-1.5 text-xs md:text-sm bg-[#ffd23f] text-[#181828]">🗺️ House Map</button>
+          <button data-tab="quests" class="hub-tab comic-btn px-3.5 py-1.5 text-xs md:text-sm bg-white text-[#181828]">📋 Quests</button>
+          <button data-tab="catalog" class="hub-tab comic-btn px-3.5 py-1.5 text-xs md:text-sm bg-white text-[#181828]">🏆 Stickers & Badges</button>
+          <button data-tab="settings" class="hub-tab comic-btn px-3.5 py-1.5 text-xs md:text-sm bg-white text-[#181828]">⚙️ Settings</button>
+        </div>
+        <button id="btn-close-hub" class="comic-btn bg-[#e63946] text-white px-3.5 py-1.5 text-sm">
+          Resume ✕
+        </button>
+      </div>
+
+      <!-- Tab Content Container -->
+      <div id="hub-content" class="p-4 md:p-6 overflow-y-auto flex-1">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /*************************************************************************
+     * CHAOS ON CLYDE STREET — COMPLETE 3D LOUD HOUSE FAN GAME
+     * Modular Architecture inside a single self-contained HTML file:
+     * 1. SoundEngine (Web Audio API procedural music, foley, notes, SFX)
+     * 2. GameData (Rooms, Siblings, Quests, Collectibles, Achievements, Secrets)
+     * 3. SaveSystem (Multi-profile localStorage persistence + anti-duplication)
+     * 4. World3D (Three.js 3D Dollhouse & Neighborhood, Avatar, Props, Raycast)
+     * 5. MiniGameEngine (7 fully playable interactive mini-games)
+     * 6. UIController (HUD, Dialogue, Map, Journal, Catalog, Mobile Controls)
+     *************************************************************************/
+
+    // =========================================================================
+    // 1. PROCEDURAL WEB AUDIO ENGINE
+    // =========================================================================
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+        this.musicEnabled = true;
+        this.musicVol = 0.25;
+        this.sfxVol = 0.5;
+        this.bgmTimer = null;
+        this.stepIndex = 0;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) {
+            this.ctx = new AudioCtx();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playTone(freq, type = 'triangle', duration = 0.15, volMult = 1, slideTo = null) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, now);
+          if (slideTo) {
+            osc.frequency.exponentialRampToValueAtTime(slideTo, now + duration);
+          }
+
+          const vol = Math.max(0.001, this.sfxVol * volMult * 0.35);
+          gain.gain.setValueAtTime(vol, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + duration + 0.02);
+        } catch (e) {
+          // Ignore audio context errors prior to user gesture
+        }
+      }
+
+      playPop() {
+        this.playTone(420, 'sine', 0.09, 0.8, 680);
+      }
+
+      playClick() {
+        this.playTone(520, 'triangle', 0.07, 0.7, 340);
+      }
+
+      playStep() {
+        this.playTone(110 + Math.random() * 25, 'sine', 0.05, 0.25, 70);
+      }
+
+      playSuccess() {
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((n, i) => {
+          setTimeout(() => this.playTone(n, 'triangle', 0.18, 0.9), i * 85);
+        });
+      }
+
+      playSecret() {
+        const notes = [392, 493.88, 587.33, 739.99, 987.77];
+        notes.forEach((n, i) => {
+          setTimeout(() => this.playTone(n, 'sine', 0.25, 1.0), i * 110);
+        });
+      }
+
+      playHonk() {
+        this.playTone(210, 'sawtooth', 0.22, 0.9, 195);
+        setTimeout(() => this.playTone(260, 'sawtooth', 0.28, 0.9, 245), 140);
+      }
+
+      playRimshot() {
+        this.playTone(180, 'triangle', 0.08, 1.0, 90);
+        setTimeout(() => this.playTone(320, 'square', 0.07, 0.7), 110);
+        setTimeout(() => this.playTone(880, 'sawtooth', 0.28, 0.5, 440), 220);
+      }
+
+      playGuitarNote(lane) {
+        const scale = [261.63, 329.63, 392.00, 523.25];
+        this.playTone(scale[lane % 4], 'sawtooth', 0.22, 0.95);
+      }
+
+      playError() {
+        this.playTone(175, 'sawtooth', 0.22, 0.8, 110);
+      }
+
+      startBGM() {
+        if (this.bgmTimer) return;
+        // Cheerful bouncy Saturday-morning sitcom bassline & melody loop
+        const melody = [
+          523.25, 0, 659.25, 587.33, 523.25, 392.00, 440.00, 0,
+          493.88, 0, 587.33, 523.25, 493.88, 392.00, 523.25, 0,
+          659.25, 0, 783.99, 698.46, 659.25, 523.25, 587.33, 0,
+          493.88, 523.25, 587.33, 659.25, 523.25, 0, 0, 0
+        ];
+        this.bgmTimer = setInterval(() => {
+          if (!this.enabled || !this.musicEnabled || !this.ctx || this.ctx.state !== 'running') return;
+          const note = melody[this.stepIndex % melody.length];
+          this.stepIndex++;
+          if (note > 0) {
+            const now = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(note, now);
+            const v = Math.max(0.001, this.musicVol * 0.14);
+            gain.gain.setValueAtTime(v, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.19);
+          }
+        }, 230);
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    // =========================================================================
+    // 2. GAME WORLD DATA: ROOMS, CHARACTERS, QUESTS, COLLECTIBLES & SECRETS
+    // =========================================================================
+    const ROOMS = [
+      {
+        id: 'yard',
+        name: 'Front Yard & Clyde St.',
+        floor: 'Exterior',
+        color: '#38b000',
+        center: { x: 0, z: 16 },
+        bounds: { minX: -18, maxX: 18, minZ: 9.5, maxZ: 22 },
+        desc: '1216 Franklin Avenue! Vanzilla is parked by the curb and Clyde is on walkie-talkie watch.'
+      },
+      {
+        id: 'living',
+        name: 'Living Room',
+        floor: '1st Floor',
+        color: '#ff9f1c',
+        center: { x: -7, z: 3 },
+        bounds: { minX: -14.5, maxX: -0.5, minZ: -3.5, maxZ: 8.8 },
+        desc: 'Home of the iconic orange couch, giant TV, and daily sibling stampedes.'
+      },
+      {
+        id: 'kitchen',
+        name: 'Kitchen & Dining Room',
+        floor: '1st Floor',
+        color: '#ffd23f',
+        center: { x: 7, z: 3 },
+        bounds: { minX: 0.5, maxX: 14.5, minZ: -3.5, maxZ: 8.8 },
+        desc: 'Features the famous 11-chair dining table, busy toaster, and Lynn Sr.’s cookware.'
+      },
+      {
+        id: 'basement',
+        name: 'Basement & Laundry',
+        floor: 'Lower Level',
+        color: '#577590',
+        center: { x: -19, z: 3 },
+        bounds: { minX: -24.5, maxX: -15.5, minZ: -3.5, maxZ: 8.8 },
+        desc: 'Washer, dryer, water heater, and mysterious blueprints taped behind the pipes.'
+      },
+      {
+        id: 'backyard',
+        name: 'Loud Backyard',
+        floor: 'Exterior',
+        color: '#52b788',
+        center: { x: 0, z: -16 },
+        bounds: { minX: -16, maxX: 16, minZ: -22, maxZ: -10.5 },
+        desc: 'Lana’s mud pit, the kiddie pool, and sports practice zone.'
+      },
+      {
+        id: 'hallway',
+        name: 'Upstairs Hallway & Bath',
+        floor: '2nd Floor',
+        color: '#90be6d',
+        center: { x: 0, z: -6.8 },
+        bounds: { minX: -14.5, maxX: 14.5, minZ: -9.5, maxZ: -4.2 },
+        desc: 'The nerve center of the second floor—where the line for the single bathroom never ends.'
+      },
+      {
+        id: 'lincoln',
+        name: "Lincoln's Room",
+        floor: '2nd Floor',
+        color: '#ff6b2b',
+        center: { x: -11.5, z: -13 },
+        bounds: { minX: -14.5, maxX: -8.5, minZ: -16.5, maxZ: -10.2 },
+        desc: 'Former linen closet turned Ace Savvy headquarters! Bun-Bun sits proudly on the bed.'
+      },
+      {
+        id: 'lorileni',
+        name: "Lori & Leni's Room",
+        floor: '2nd Floor',
+        color: '#1ecbe1',
+        center: { x: -4, z: -13 },
+        bounds: { minX: -7.8, maxX: -0.3, minZ: -16.5, maxZ: -10.2 },
+        desc: 'Half-aqua phone command center, half-pastel fashion boutique.'
+      },
+      {
+        id: 'lunaluan',
+        name: "Luna & Luan's Room",
+        floor: '2nd Floor',
+        color: '#845ec2',
+        center: { x: 4, z: -13 },
+        bounds: { minX: 0.3, maxX: 7.8, minZ: -16.5, maxZ: -10.2 },
+        desc: 'Amplifiers, drum kits, prank boxes, and Mr. Coconuts keeping watch.'
+      },
+      {
+        id: 'lynnlucy',
+        name: "Lynn & Lucy's Room",
+        floor: '2nd Floor',
+        color: '#e63946',
+        center: { x: 11.5, z: -13 },
+        bounds: { minX: 8.5, maxX: 14.5, minZ: -16.5, maxZ: -10.2 },
+        desc: 'High-energy sports trophies collide with gloomy poetry and Edwin’s bust.'
+      },
+      {
+        id: 'lanalola',
+        name: "Lana & Lola's Room",
+        floor: '2nd Floor',
+        color: '#ff5d8f',
+        center: { x: -19.5, z: -13 },
+        bounds: { minX: -24.5, maxX: -15.5, minZ: -16.5, maxZ: -10.2 },
+        desc: 'Sparkly pageant tiaras on one side, wrenches and frogs on the other!'
+      },
+      {
+        id: 'lisalily',
+        name: "Lisa & Lily's Wing",
+        floor: '2nd Floor',
+        color: '#43aa8b',
+        center: { x: 19.5, z: -13 },
+        bounds: { minX: 15.5, maxX: 24.5, minZ: -16.5, maxZ: -10.2 },
+        desc: 'Bubbling chemical beakers right next to Lily’s pastel nursery crib.'
+      }
+    ];
+
+    const CHARACTERS = [
+      {
+        id: 'lincoln',
+        name: 'Lincoln Loud',
+        role: 'The Man With The Plan',
+        emoji: '👦🏻',
+        room: 'living',
+        pos: { x: -5.5, z: 3.2 },
+        shirtColor: '#ff6b2b',
+        hairColor: '#f8f9fa',
+        questId: 'q_lincoln',
+        minigame: null,
+        intro: "Whoa, good timing! Dad accidentally scrambled everyone's Saturday schedule chart, and the house is five minutes from total meltdown. Help at least 4 of my sisters with their crises, then meet me back here!",
+        progress: "Keep going! Check the upstairs rooms, kitchen, and backyard. Every sister has a mini-game or crisis that needs your skills!",
+        complete: "You did it! Operation: Saturday Survival is a massive success! Also... keep an eye out for 4 secret Ace Savvy clues hidden around the house!"
+      },
+      {
+        id: 'clyde',
+        name: 'Clyde McBride',
+        role: 'Clincoln McCloud Partner',
+        emoji: '🤓',
+        room: 'yard',
+        pos: { x: -3.2, z: 13.5 },
+        shirtColor: '#ffd23f',
+        hairColor: '#2b2d42',
+        questId: 'q_clyde',
+        minigame: null,
+        intro: "One-Eyed Jack to Ace Savvy's newest recruit! I'm monitoring the perimeter from Clyde Street. If you inspect the mailbox, Vanzilla, and find 3 scattered comic pages, I'll decode the secret stash!",
+        progress: "My walkie-talkie is picking up weird signals from the Basement and Lincoln's room. Keep exploring!",
+        complete: "Clincoln McCloud strikes again! You've earned the Official Walkie-Talkie Badge!"
+      },
+      {
+        id: 'luna',
+        name: 'Luna Loud',
+        role: 'Rock & Roll Heart',
+        emoji: '🎸',
+        room: 'lunaluan',
+        pos: { x: 2.5, z: -13.2 },
+        shirtColor: '#845ec2',
+        hairColor: '#4a2c2a',
+        questId: 'q_luna',
+        minigame: 'rhythm',
+        intro: "Rock on, dude! My amp blew a fuse right before my virtual gig! Jump on my guitar rig and nail this rhythm riff so we can crank the volume to 11!",
+        progress: "Ready to shred? Hit the rhythm notes right on the beat!",
+        complete: "WICKED SOLO, DUDE! That riff shook the rafters all the way to Clyde Street!"
+      },
+      {
+        id: 'luan',
+        name: 'Luan Loud',
+        role: 'Prank & Comedy Queen',
+        emoji: '🤡',
+        room: 'lunaluan',
+        pos: { x: 5.8, z: -12.6 },
+        shirtColor: '#ffd23f',
+        hairColor: '#5c3a21',
+        questId: 'q_luan',
+        minigame: 'comedy',
+        intro: "Why did the toaster cross the kitchen? To get to the 'butter' side! Ha-ha! Get it?! Test out my new Comedy Club punchlines and fill the Laugh-O-Meter!",
+        progress: "Step right up to the mic! Pick the sharpest punchlines before the timer buzzes!",
+        complete: "You're a natural stand-up star! No 'yolk' about it—that was egg-cellent!"
+      },
+      {
+        id: 'lori',
+        name: 'Lori Loud',
+        role: 'eldest & Texting Pro',
+        emoji: '📱',
+        room: 'lorileni',
+        pos: { x: -5.8, z: -13.2 },
+        shirtColor: '#1ecbe1',
+        hairColor: '#f4d35e',
+        questId: 'q_lorileni',
+        minigame: 'closet',
+        intro: "I am literally about to lose my mind! Leni mixed up my Bobby-date outfits with her scarves and my phone chargers! Help us sort this closet chaos ASAP!",
+        progress: "Sort each item into Lori's Phone/Schedule bin or Leni's Fashion bin before time runs out!",
+        complete: "OMG, thank you! You literally saved my afternoon!"
+      },
+      {
+        id: 'leni',
+        name: 'Leni Loud',
+        role: 'Fashionista Sweetheart',
+        emoji: '🕶️',
+        room: 'lorileni',
+        pos: { x: -2.2, z: -12.6 },
+        shirtColor: '#72efdd',
+        hairColor: '#f4d35e',
+        questId: 'q_lorileni',
+        minigame: 'closet',
+        intro: "Ooh, I love your shirt! Is it vintage? I tried organizing our closet by 'vibes' and now Lori's shoes are in my sunglasses bin. Wanna help sort them?",
+        progress: "Totes awesome! Let's sort the outfits and gadgets together!",
+        complete: "Yay! Everything looks super chic now! You're an honorary fashion designer!"
+      },
+      {
+        id: 'lynn',
+        name: 'Lynn Loud Jr.',
+        role: 'All-Star Athlete',
+        emoji: '⚽',
+        room: 'lynnlucy',
+        pos: { x: 9.8, z: -13.2 },
+        shirtColor: '#e63946',
+        hairColor: '#4a2c2a',
+        questId: 'q_lynn',
+        minigame: 'sports',
+        intro: "Heads up, rookie! Think you've got the reflexes to survive a Loud House hallway gauntlet? Aim your shots and score 8 goals in my Slapshot Challenge!",
+        progress: "Keep your eye on the moving goal target and fire when it lines up!",
+        complete: "BOOM! Back of the net! You've officially got varsity-level reflexes!"
+      },
+      {
+        id: 'lucy',
+        name: 'Lucy Loud',
+        role: 'Poet of the Shadows',
+        emoji: '🦇',
+        room: 'lynnlucy',
+        pos: { x: 12.8, z: -12.5 },
+        shirtColor: '#2b2d42',
+        hairColor: '#181828',
+        questId: 'q_lucy',
+        minigame: 'gothic',
+        intro: "Sigh... Darkness has fallen over my poetry collection. Six mystical artifacts vanished into the shadows of this room. Help me uncover them before Edwin gets lonely.",
+        progress: "Peer into the gloom and click all 6 hidden gothic relics.",
+        complete: "How delightfully bleak. The spirits—and Edwin—are pleased with your sharp eyes."
+      },
+      {
+        id: 'lana',
+        name: 'Lana Loud',
+        role: 'Mud & Wrench Mechanic',
+        emoji: '🔧',
+        room: 'lanalola',
+        pos: { x: -21.5, z: -13.0 },
+        shirtColor: '#4361ee',
+        hairColor: '#f4d35e',
+        questId: 'q_lanalola',
+        minigame: 'balance',
+        intro: "Hey! The upstairs pipe is springing leaks while Lola is trying to balance her pageant tea tray! Tighten the leaky valves AND keep her tray steady!",
+        progress: "Click leaking pipes to wrench them shut while keeping the balance meter centered!",
+        complete: "Sweet! Zero puddles on the floor and Hops didn't even get wet!"
+      },
+      {
+        id: 'lola',
+        name: 'Lola Loud',
+        role: 'Pageant Princess',
+        emoji: '👑',
+        room: 'lanalola',
+        pos: { x: -17.5, z: -12.6 },
+        shirtColor: '#ff5d8f',
+        hairColor: '#f4d35e',
+        questId: 'q_lanalola',
+        minigame: 'balance',
+        intro: "If Lana splashes ONE drop of mud on my satin sash, there will be consequences! Help balance my royal tea service while she fixes that leaky pipe!",
+        progress: "Keep my tiara tray balanced! Elegance under pressure!",
+        complete: "Fabulous! Not a single crumb out of place. You may attend my next tea party!"
+      },
+      {
+        id: 'lisa',
+        name: 'Lisa Loud',
+        role: 'Child Prodigy Scientist',
+        emoji: '🧪',
+        room: 'lisalily',
+        pos: { x: 17.5, z: -13.0 },
+        shirtColor: '#38b000',
+        hairColor: '#4a2c2a',
+        questId: 'q_lisa',
+        minigame: 'logic',
+        intro: "Greetings, test subject—er, houseguest. My isotopic compound stabilizer requires precise molecular alignment. Calibrate the 3x3 chemical grid to achieve equilibrium.",
+        progress: "Toggle the chemical nodes until all cells glow emerald green!",
+        complete: "Fascinating. Your prefrontal cortex exceeded my baseline projections by 14.2%."
+      },
+      {
+        id: 'lily',
+        name: 'Lily Loud',
+        role: 'Baby of the Family',
+        emoji: '🍼',
+        room: 'lisalily',
+        pos: { x: 21.8, z: -12.5 },
+        shirtColor: '#f8f9fa',
+        hairColor: '#f4d35e',
+        questId: 'q_lily',
+        minigame: 'peekaboo',
+        intro: "Poo-poo! Ga-ga! *Lily giggles and waves her rattle toward her colorful stacking blocks!*",
+        progress: "Play Peek-a-Boo and tap the glowing rattle blocks to make Lily laugh!",
+        complete: "Yay!! *Lily claps happily and hands you a shiny Baby Star Sticker!*"
+      }
+    ];
+
+    const QUESTS = [
+      {
+        id: 'q_lincoln',
+        title: "Operation: Saturday Survival",
+        giver: 'Lincoln Loud',
+        desc: "Complete at least 4 sibling challenges around the Loud House, then report back to Lincoln in the Living Room.",
+        rewardPts: 250,
+        badge: 'ace_planner'
+      },
+      {
+        id: 'q_luna',
+        title: "Amped Up on Franklin Ave",
+        giver: 'Luna Loud',
+        desc: "Score 150+ points in Luna's Rockin' Rhythm Jam in Luna & Luan's room.",
+        rewardPts: 150,
+        badge: 'rock_star'
+      },
+      {
+        id: 'q_luan',
+        title: "No Joke Zone",
+        giver: 'Luan Loud',
+        desc: "Fill the Laugh-O-Meter in Luan's Comedy Club Setup mini-game.",
+        rewardPts: 150,
+        badge: 'comedy_king'
+      },
+      {
+        id: 'q_lorileni',
+        title: "Literally Closet Chaos",
+        giver: 'Lori & Leni',
+        desc: "Sort 10 items accurately in the Closet Chaos Organizer.",
+        rewardPts: 150,
+        badge: 'fashion_guru'
+      },
+      {
+        id: 'q_lynn',
+        title: "Hallway Hat-Trick",
+        giver: 'Lynn Loud Jr.',
+        desc: "Score 8 goals in Lynn's Hallway Slapshot Challenge.",
+        rewardPts: 150,
+        badge: 'varsity_mvp'
+      },
+      {
+        id: 'q_lucy',
+        title: "Shadows of Edwin",
+        giver: 'Lucy Loud',
+        desc: "Locate all 6 hidden gothic artifacts in Lucy's Shadow Hunt.",
+        rewardPts: 150,
+        badge: 'shadow_poet'
+      },
+      {
+        id: 'q_lanalola',
+        title: "Wrenches & Tiaras",
+        giver: 'Lana & Lola',
+        desc: "Fix the leaky pipes while keeping Lola's tea tray balanced.",
+        rewardPts: 150,
+        badge: 'twin_diplomat'
+      },
+      {
+        id: 'q_lisa',
+        title: "Isotopic Equilibrium",
+        giver: 'Lisa Loud',
+        desc: "Solve Lisa's Chemical Reaction Logic Grid.",
+        rewardPts: 150,
+        badge: 'junior_genius'
+      },
+      {
+        id: 'q_lily',
+        title: "Rattle & Giggle",
+        giver: 'Lily Loud',
+        desc: "Win a playful round of Peek-a-Boo Blocks with Lily.",
+        rewardPts: 120,
+        badge: 'baby_buddy'
+      },
+      {
+        id: 'q_clyde',
+        title: "Clincoln McCloud Patrol",
+        giver: 'Clyde McBride',
+        desc: "Inspect Vanzilla & the Mailbox outside, then check in with Clyde.",
+        rewardPts: 130,
+        badge: 'walkie_partner'
+      },
+      {
+        id: 'q_secret',
+        title: "SECRET: Ace Savvy's Lost Issue #1",
+        giver: 'Hidden Clues',
+        desc: "Find all 4 hidden Ace Savvy clues (Lincoln's Desk, Lucy's Coffin, Lisa's Chalkboard, Basement Pipe) to unlock the Golden Plunger Trophy!",
+        rewardPts: 400,
+        badge: 'golden_plunger'
+      }
+    ];
+
+    const BADGES = [
+      { id: 'ace_planner', name: 'Man With The Plan', icon: '🃏', desc: 'Restored order to the Loud House.' },
+      { id: 'rock_star', name: 'Shredder Pick', icon: '🎸', desc: 'Nailed Luna’s rhythm jam.' },
+      { id: 'comedy_king', name: 'Mr. Coconuts Approved', icon: '🥥', desc: 'Cracked up Luan’s audience.' },
+      { id: 'fashion_guru', name: 'Totes Chic', icon: '🕶️', desc: 'Saved Lori & Leni’s closet.' },
+      { id: 'varsity_mvp', name: 'Varsity MVP', icon: '🏆', desc: 'Dominated Lynn’s slapshot drill.' },
+      { id: 'shadow_poet', name: 'Spirit Whisperer', icon: '🕯️', desc: 'Found Lucy’s 6 lost relics.' },
+      { id: 'twin_diplomat', name: 'Twin Diplomat', icon: '👑', desc: 'Survived Lana & Lola’s dual crisis.' },
+      { id: 'junior_genius', name: 'Nobel Junior', icon: '🧬', desc: 'Solved Lisa’s chemical grid.' },
+      { id: 'baby_buddy', name: 'Lily’s Favorite', icon: '🍼', desc: 'Made Lily giggle.' },
+      { id: 'walkie_partner', name: 'One-Eyed Jack', icon: '📻', desc: 'Completed Clyde’s street patrol.' },
+      { id: 'golden_plunger', name: 'Golden Plunger Legend', icon: '🪠', desc: 'Solved the 4-room secret mystery!' },
+      { id: 'house_explorer', name: '1216 Super-Fan', icon: '🏠', desc: 'Discovered 8+ interactive house props.' }
+    ];
+
+    const SECRET_CLUES = [
+      { id: 'clue_lincoln', label: "Ace Savvy Desk Blueprint (Lincoln's Room)" },
+      { id: 'clue_lucy', label: "Cryptic Bat Cipher (Lucy's Coffin)" },
+      { id: 'clue_lisa', label: "Chalkboard Coordinates (Lisa's Lab)" },
+      { id: 'clue_basement', label: "Hidden Vault Valve (Basement)" }
+    ];
+
+    // =========================================================================
+    // 3. PERSISTENT MULTI-PROFILE SAVE SYSTEM (localStorage)
+    // =========================================================================
+    class SaveSystem {
+      constructor() {
+        this.STORAGE_KEY = 'chaos_on_clyde_street_saves_v1';
+        this.data = this.loadAll();
+        this.activeProfileId = null;
+      }
+
+      loadAll() {
+        try {
+          const raw = localStorage.getItem(this.STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed.profiles === 'object') {
+              return parsed;
+            }
+          }
+        } catch (e) {
+          console.warn('Save load fallback:', e);
+        }
+        return { profiles: {}, settings: { sound: true, music: true, reducedMotion: false } };
+      }
+
+      persist() {
+        try {
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.data));
+          this.showAutosaveBadge();
+        } catch (e) {
+          console.warn('Unable to write localStorage:', e);
+        }
+      }
+
+      showAutosaveBadge() {
+        const badge = document.getElementById('autosave-badge');
+        if (!badge) return;
+        badge.classList.remove('opacity-0');
+        clearTimeout(this._badgeTimer);
+        this._badgeTimer = setTimeout(() => {
+          badge.classList.add('opacity-0');
+        }, 1800);
+      }
+
+      createProfile(name, shirtColor = '#ff6b2b') {
+        const cleanName = (name || 'Houseguest').trim().slice(0, 16) || 'Houseguest';
+        const id = 'prof_' + Date.now() + '_' + Math.floor(Math.random() * 999);
+        this.data.profiles[id] = {
+          id,
+          name: cleanName,
+          shirtColor,
+          createdAt: new Date().toISOString(),
+          lastPlayed: new Date().toISOString(),
+          position: { x: 0, z: 14.5 },
+          currentRoom: 'yard',
+          chaosPoints: 0,
+          completedQuests: [],
+          badges: [],
+          secretClues: [],
+          inspectedProps: [],
+          bestScores: {},
+          lincolnTalked: false
+        };
+        this.activeProfileId = id;
+        this.persist();
+        return this.data.profiles[id];
+      }
+
+      selectProfile(id) {
+        if (this.data.profiles[id]) {
+          this.activeProfileId = id;
+          this.data.profiles[id].lastPlayed = new Date().toISOString();
+          this.persist();
+          return this.data.profiles[id];
+        }
+        return null;
+      }
+
+      deleteProfile(id) {
+        delete this.data.profiles[id];
+        if (this.activeProfileId === id) {
+          this.activeProfileId = null;
+        }
+        this.persist();
+      }
+
+      getCurrent() {
+        return this.activeProfileId ? this.data.profiles[this.activeProfileId] : null;
+      }
+
+      getCompletionPercent(profile) {
+        if (!profile) return 0;
+        const totalGoals = QUESTS.length + BADGES.length;
+        const done = profile.completedQuests.length + profile.badges.length;
+        return Math.min(100, Math.round((done / totalGoals) * 100));
+      }
+
+      awardQuest(questId) {
+        const p = this.getCurrent();
+        if (!p) return false;
+        if (p.completedQuests.includes(questId)) return false; // Prevent duplicate one-time rewards
+
+        const q = QUESTS.find(item => item.id === questId);
+        if (!q) return false;
+
+        p.completedQuests.push(questId);
+        p.chaosPoints += q.rewardPts;
+        if (q.badge && !p.badges.includes(q.badge)) {
+          p.badges.push(q.badge);
+        }
+        this.persist();
+        return q;
+      }
+
+      recordMiniGameScore(gameKey, score) {
+        const p = this.getCurrent();
+        if (!p) return;
+        const prev = p.bestScores[gameKey] || 0;
+        if (score > prev) {
+          p.bestScores[gameKey] = score;
+          this.persist();
+        }
+      }
+
+      recordPropInspection(propId) {
+        const p = this.getCurrent();
+        if (!p) return false;
+        if (!p.inspectedProps.includes(propId)) {
+          p.inspectedProps.push(propId);
+          p.chaosPoints += 15;
+          if (p.inspectedProps.length >= 8 && !p.badges.includes('house_explorer')) {
+            p.badges.push('house_explorer');
+            showToast('🏆 Badge Unlocked: 1216 Super-Fan!', 'bg-[#ffd23f]');
+          }
+          // Check Clyde patrol condition
+          if (p.inspectedProps.includes('prop_vanzilla') && p.inspectedProps.includes('prop_mailbox')) {
+            if (!p.completedQuests.includes('q_clyde')) {
+              const q = this.awardQuest('q_clyde');
+              if (q) {
+                sound.playSuccess();
+                showToast(`📻 Clyde Quest Complete! +${q.rewardPts} Chaos Pts!`, 'bg-[#38b000] text-white');
+              }
+            }
+          }
+          this.persist();
+          return true;
+        }
+        return false;
+      }
+
+      discoverSecretClue(clueId) {
+        const p = this.getCurrent();
+        if (!p) return false;
+        if (!p.secretClues.includes(clueId)) {
+          p.secretClues.push(clueId);
+          p.chaosPoints += 50;
+          sound.playSecret();
+          showToast(`🔍 Secret Clue Found (${p.secretClues.length}/4)!`, 'bg-[#845ec2] text-white');
+          if (p.secretClues.length >= 4 && !p.completedQuests.includes('q_secret')) {
+            const q = this.awardQuest('q_secret');
+            if (q) {
+              setTimeout(() => {
+                sound.playSuccess();
+                showToast(`🪠 SECRET QUEST SOLVED! Golden Plunger Unlocked (+${q.rewardPts} Pts)!`, 'bg-[#ffd23f]');
+              }, 700);
+            }
+          }
+          this.persist();
+          return true;
+        }
+        return false;
+      }
+    }
+
+    const saves = new SaveSystem();
+
+    // =========================================================================
+    // 4. THREE.JS 3D WORLD & DOLLHOUSE ARCHITECTURE
+    // =========================================================================
+    class World3D {
+      constructor(canvas) {
+        this.canvas = canvas;
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color('#8ecae6');
+        this.scene.fog = new THREE.FogExp2('#8ecae6', 0.011);
+
+        this.camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 200);
+        this.cameraMode = 0; // 0: Dollhouse Elevated, 1: Close Follow, 2: Wide Overview
+        this.camYaw = 0;
+
+        this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        this.clock = new THREE.Clock();
+        this.interactables = []; // Meshes with userData { type, id, label, action }
+        this.characterMeshes = {};
+        this.animatedObjects = [];
+        this.particles = [];
+        this.walkableFloors = [];
+
+        // Player state
+        this.playerGroup = null;
+        this.playerPos = new THREE.Vector3(0, 0, 14.5);
+        this.targetPos = null;
+        this.playerSpeed = 8.2;
+        this.keys = {};
+        this.joyVec = { x: 0, y: 0 };
+        this.stepTimer = 0;
+
+        this.raycaster = new THREE.Raycaster();
+        this.pointer = new THREE.Vector2();
+
+        this.setupLights();
+        this.buildEnvironment();
+        this.buildCharacters();
+        this.buildInteractiveProps();
+        this.createPlayerAvatar('#ff6b2b');
+        this.bindEvents();
+      }
+
+      setupLights() {
+        const hemi = new THREE.HemisphereLight('#fffdf5', '#4a5759', 0.85);
+        hemi.position.set(0, 40, 0);
+        this.scene.add(hemi);
+
+        const sun = new THREE.DirectionalLight('#fff3b0', 0.95);
+        sun.position.set(22, 38, 26);
+        sun.castShadow = true;
+        sun.shadow.mapSize.width = 2048;
+        sun.shadow.mapSize.height = 2048;
+        sun.shadow.camera.near = 5;
+        sun.shadow.camera.far = 95;
+        const d = 32;
+        sun.shadow.camera.left = -d;
+        sun.shadow.camera.right = d;
+        sun.shadow.camera.top = d;
+        sun.shadow.camera.bottom = -d;
+        this.scene.add(sun);
+
+        // Warm interior living room glow
+        const livingLight = new THREE.PointLight('#ff9f1c', 0.6, 18);
+        livingLight.position.set(-7, 4.5, 3);
+        this.scene.add(livingLight);
+
+        // Spooky purple light in Lucy's corner
+        const lucyLight = new THREE.PointLight('#9d4edd', 0.65, 11);
+        lucyLight.position.set(12, 4, -13);
+        this.scene.add(lucyLight);
+
+        // Green lab glow in Lisa's corner
+        const lisaLight = new THREE.PointLight('#38b000', 0.65, 11);
+        lisaLight.position.set(18, 4, -13);
+        this.scene.add(lisaLight);
+      }
+
+      addBox(w, h, d, color, x, y, z, receiveShadow = true, castShadow = true) {
+        const geo = new THREE.BoxGeometry(w, h, d);
+        const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.72, metalness: 0.06 });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(x, y, z);
+        mesh.receiveShadow = receiveShadow;
+        mesh.castShadow = castShadow;
+        this.scene.add(mesh);
+        return mesh;
+      }
+
+      addOutlinedBox(w, h, d, color, x, y, z) {
+        const mesh = this.addBox(w, h, d, color, x, y, z);
+        const edges = new THREE.EdgesGeometry(mesh.geometry);
+        const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: '#181828', linewidth: 1 }));
+        mesh.add(line);
+        return mesh;
+      }
+
+      buildEnvironment() {
+        // 1. Neighborhood Ground, Lawn & Clyde Street Asphalt
+        const lawn = this.addBox(75, 0.6, 65, '#52b788', 0, -0.3, 0, true, false);
+        this.walkableFloors.push(lawn);
+
+        // Clyde Street Road & Sidewalk
+        this.addBox(75, 0.12, 7.5, '#3d405b', 0, 0.02, 19.5, true, false);
+        this.addBox(75, 0.18, 2.2, '#e5e5e5', 0, 0.04, 15.0, true, false);
+        for (let sx = -32; sx <= 32; sx += 6) {
+          this.addBox(3, 0.14, 0.3, '#ffd23f', sx, 0.05, 19.5, false, false);
+        }
+
+        // Front walkway to porch
+        this.addBox(3.4, 0.18, 6.2, '#e5e5e5', 0, 0.05, 11.5, true, false);
+
+        // 2. Iconic Blue-Grey Loud House Foundation & Cutaway Dollhouse Walls
+        // 1st Floor Slab (Living Room, Kitchen, Basement)
+        this.addOutlinedBox(30, 0.3, 13.5, '#f4e8c1', 0, 0.15, 2.5);
+        // Basement Slab (Left Wing)
+        this.addOutlinedBox(10, 0.3, 13.5, '#adb5bd', -20, 0.15, 2.5);
+
+        // 2nd Floor Slab (Hallway & 6 Bedroom Zones)
+        this.addOutlinedBox(50, 0.3, 13.5, '#f8edeb', 0, 0.15, -10.5);
+
+        // Exterior Stylized Cutaway Walls (Low front walls so camera sees inside clearly!)
+        const wallBlue = '#74a5c9';
+        const trimWhite = '#fffdf5';
+
+        // Back perimeter walls (Tall for architectural framing)
+        this.addOutlinedBox(50.4, 5.2, 0.4, wallBlue, 0, 2.6, -17.2);
+        // Left & Right outer walls
+        this.addOutlinedBox(0.4, 5.2, 26.8, wallBlue, -25, 2.6, -3.8);
+        this.addOutlinedBox(0.4, 5.2, 13.6, wallBlue, 25, 2.6, -10.5);
+        this.addOutlinedBox(0.4, 5.2, 13.6, wallBlue, 15, 2.6, 2.5);
+
+        // Front facade with open doorway into Living Room
+        this.addOutlinedBox(11.5, 4.4, 0.4, wallBlue, -9.2, 2.2, 9.2);
+        this.addOutlinedBox(11.5, 4.4, 0.4, wallBlue, 9.2, 2.2, 9.2);
+        // Front Door Frame
+        this.addOutlinedBox(4.0, 0.6, 0.5, trimWhite, 0, 4.1, 9.2);
+        // Porch Pillars
+        this.addOutlinedBox(0.4, 4.2, 0.4, trimWhite, -3.2, 2.1, 10.6);
+        this.addOutlinedBox(0.4, 4.2, 0.4, trimWhite, 3.2, 2.1, 10.6);
+
+        // Interior Room Dividers (Low cutaway height = 2.6 so rooms feel distinct yet visible)
+        // Living Room vs Kitchen divider (with wide walk-through)
+        this.addOutlinedBox(0.35, 2.8, 4.2, '#f77f00', 0, 1.4, -1.8);
+        this.addOutlinedBox(0.35, 2.8, 3.2, '#f77f00', 0, 1.4, 7.6);
+
+        // Living Room vs Basement doorway
+        this.addOutlinedBox(0.35, 3.2, 4.5, '#6c757d', -15, 1.6, -1.6);
+        this.addOutlinedBox(0.35, 3.2, 4.2, '#6c757d', -15, 1.6, 7.1);
+
+        // 1st Floor to Upstairs Hallway divider (Open central stairs passage)
+        this.addOutlinedBox(11.0, 2.8, 0.35, '#e9c46a', -9.5, 1.4, -4.0);
+        this.addOutlinedBox(11.0, 2.8, 0.35, '#e9c46a', 9.5, 1.4, -4.0);
+
+        // Upstairs Hallway to Bedrooms wall (with doorway gaps for every room!)
+        const doorSegments = [
+          { x: -22.5, w: 4.5 }, { x: -16.5, w: 3.0 }, { x: -13.0, w: 2.2 },
+          { x: -8.2, w: 3.2 },  { x: -1.5, w: 2.4 },  { x: 1.5, w: 2.4 },
+          { x: 8.2, w: 3.2 },   { x: 13.0, w: 2.2 },  { x: 16.5, w: 3.0 }, { x: 22.5, w: 4.5 }
+        ];
+        doorSegments.forEach(seg => {
+          this.addOutlinedBox(seg.w, 2.7, 0.35, '#f4a261', seg.x, 1.35, -10.0);
+        });
+
+        // Dividers between Upstairs Bedrooms
+        [-15.2, -8.1, 0, 8.1, 15.2].forEach(wx => {
+          this.addOutlinedBox(0.3, 3.4, 7.0, '#fffdf5', wx, 1.7, -13.6);
+        });
+
+        // Colored Room Carpets / Floor Zones for immediate visual recognition
+        this.addBox(13.5, 0.05, 12.0, '#ffcb77', -7.5, 0.32, 2.5);  // Living Room warm floor
+        this.addBox(13.5, 0.05, 12.0, '#fefae0', 7.5, 0.32, 2.5);   // Kitchen tile
+        this.addBox(9.0, 0.05, 12.0, '#6c757d', -19.8, 0.32, 2.5);  // Basement concrete
+        this.addBox(28.0, 0.05, 5.2, '#d8f3dc', 0, 0.32, -7.0);     // Upstairs Hallway runner
+        this.addBox(6.4, 0.06, 6.4, '#ff9f1c', -11.6, 0.33, -13.5); // Lincoln orange rug
+        this.addBox(7.4, 0.06, 6.4, '#90e0ef', -4.0, 0.33, -13.5);  // Lori/Leni aqua rug
+        this.addBox(7.4, 0.06, 6.4, '#c77dff', 4.0, 0.33, -13.5);   // Luna/Luan purple rug
+        this.addBox(6.4, 0.06, 6.4, '#ff758f', 11.6, 0.33, -13.5);  // Lynn/Lucy red-goth rug
+        this.addBox(9.0, 0.06, 6.4, '#ffafcc', -19.8, 0.33, -13.5); // Lana/Lola pink-blue rug
+        this.addBox(9.0, 0.06, 6.4, '#b7e4c7', 19.8, 0.33, -13.5);  // Lisa/Lily mint lab rug
+
+        // 3. Detailed Room Furnishings
+        this.buildFurniture();
+      }
+
+      buildFurniture() {
+        // --- EXTERIOR: VANZILLA & MAILBOX ---
+        const vanGroup = new THREE.Group();
+        vanGroup.position.set(8.5, 0.2, 17.5);
+        const body = new THREE.Mesh(new THREE.BoxGeometry(5.2, 2.0, 2.4), new THREE.MeshStandardMaterial({ color: '#5bc0eb' }));
+        body.position.y = 1.3;
+        body.castShadow = true;
+        vanGroup.add(body);
+        const stripe = new THREE.Mesh(new THREE.BoxGeometry(5.3, 0.35, 2.46), new THREE.MeshStandardMaterial({ color: '#ffd23f' }));
+        stripe.position.y = 1.0;
+        vanGroup.add(stripe);
+        [[-1.6, 1.2], [1.6, 1.2], [-1.6, -1.2], [1.6, -1.2]].forEach(([wx, wz]) => {
+          const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.35, 16), new THREE.MeshStandardMaterial({ color: '#181828' }));
+          wheel.rotation.x = Math.PI / 2;
+          wheel.position.set(wx, 0.55, wz);
+          vanGroup.add(wheel);
+        });
+        this.scene.add(vanGroup);
+        this.registerInteractable(body, 'prop_vanzilla', 'Vanzilla Van (Honk Horn!)', () => {
+          sound.playHonk();
+          vanGroup.position.y = 0.45;
+          setTimeout(() => { vanGroup.position.y = 0.2; }, 180);
+          const isNew = saves.recordPropInspection('prop_vanzilla');
+          showToast(isNew ? '🚐 BEEP-BEEP! Inspected Vanzilla (+15 Chaos Pts)' : '🚐 BEEP-BEEP! Vanzilla is fueled up!', 'bg-[#1ecbe1]');
+        });
+
+        // Mailbox
+        this.addBox(0.25, 1.4, 0.25, '#8d5524', -5.2, 0.7, 14.2);
+        const mbox = this.addOutlinedBox(0.9, 0.65, 1.2, '#e63946', -5.2, 1.55, 14.2);
+        this.registerInteractable(mbox, 'prop_mailbox', 'Loud Family Mailbox', () => {
+          sound.playPop();
+          const isNew = saves.recordPropInspection('prop_mailbox');
+          showToast(isNew ? '📬 Found a stack of 11 catalogs & Ace Savvy fan mail! (+15 Pts)' : '📬 Just bills and fashion magazines!', 'bg-[#ffd23f]');
+        });
+
+        // --- LIVING ROOM: ICONIC ORANGE COUCH & TV ---
+        const couchBase = this.addOutlinedBox(4.8, 0.85, 1.8, '#ff6b2b', -7.2, 0.72, 1.2);
+        this.addOutlinedBox(4.8, 1.3, 0.45, '#ff6b2b', -7.2, 1.35, 0.45);
+        this.addOutlinedBox(0.45, 1.1, 1.8, '#e85d04', -9.4, 1.05, 1.2);
+        this.addOutlinedBox(0.45, 1.1, 1.8, '#e85d04', -5.0, 1.05, 1.2);
+        this.registerInteractable(couchBase, 'prop_couch', 'Iconic Orange Couch', () => {
+          sound.playPop();
+          const isNew = saves.recordPropInspection('prop_couch');
+          showToast(isNew ? '🛋️ Found 37 cents and a half-eaten burrito in the cushions! (+15 Pts)' : '🛋️ Comfiest seat in Royal Woods!', 'bg-[#ff6b2b] text-white');
+        });
+
+        // Living Room TV
+        this.addOutlinedBox(2.4, 0.8, 1.1, '#8d5524', -7.2, 0.7, 6.2);
+        const tvScreen = this.addOutlinedBox(2.1, 1.35, 0.3, '#1ecbe1', -7.2, 1.75, 6.2);
+        this.animatedObjects.push({ mesh: tvScreen, type: 'tv' });
+        this.registerInteractable(tvScreen, 'prop_tv', 'Family TV (Change Channel)', () => {
+          sound.playClick();
+          const channels = ['#ff5d8f', '#38b000', '#ffd23f', '#1ecbe1', '#845ec2'];
+          const shows = ['ARGGH! Ghost Hunters', 'The Dream Boat', 'Ace Savvy Special', 'Blarney the Dinosaur', 'Muscle Fish'];
+          const idx = Math.floor(Math.random() * channels.length);
+          tvScreen.material.color.set(channels[idx]);
+          const isNew = saves.recordPropInspection('prop_tv');
+          showToast(`📺 Now Watching: ${shows[idx]}!${isNew ? ' (+15 Pts)' : ''}`, 'bg-[#1ecbe1]');
+        });
+
+        // --- KITCHEN: 11-CHAIR DINING TABLE & FRIDGE ---
+        const table = this.addOutlinedBox(6.8, 0.25, 2.4, '#d4a373', 7.2, 1.25, 2.2);
+        this.addOutlinedBox(0.4, 1.1, 0.4, '#bc6c25', 4.5, 0.65, 2.2);
+        this.addOutlinedBox(0.4, 1.1, 0.4, '#bc6c25', 9.9, 0.65, 2.2);
+        // 11 Sibling Chairs around the table!
+        for (let i = 0; i < 5; i++) {
+          this.addBox(0.65, 0.75, 0.65, '#faedcd', 4.4 + i * 1.4, 0.55, 0.55);
+          this.addBox(0.65, 0.75, 0.65, '#faedcd', 4.4 + i * 1.4, 0.55, 3.85);
+        }
+        this.addBox(0.65, 0.75, 0.65, '#ff6b2b', 11.2, 0.55, 2.2); // Kiddie table chair!
+        this.registerInteractable(table, 'prop_table', '11-Chair Dining Table', () => {
+          sound.playPop();
+          const isNew = saves.recordPropInspection('prop_table');
+          showToast(isNew ? '🍝 Lynn Sr.’s Goulash Night! Everyone survived! (+15 Pts)' : '🍽️ 11 chairs, zero elbows safe!', 'bg-[#ffd23f]');
+        });
+
+        // Fridge
+        const fridge = this.addOutlinedBox(1.6, 3.2, 1.5, '#f8f9fa', 13.2, 1.9, -1.8);
+        this.registerInteractable(fridge, 'prop_fridge', 'Loud Family Fridge', () => {
+          sound.playPop();
+          const isNew = saves.recordPropInspection('prop_fridge');
+          showToast(isNew ? '🧃 Grabbed a frosty Flippee! (+15 Pts)' : '🧊 Covered in 11 report cards and drawings!', 'bg-[#1ecbe1]');
+        });
+
+        // --- UPSTAIRS HALLWAY: ICONIC BATHROOM DOOR & PLUNGER ---
+        const bathDoor = this.addOutlinedBox(2.2, 3.0, 0.4, '#4cc9f0', 0, 1.8, -9.8);
+        this.registerInteractable(bathDoor, 'prop_bathroom', 'The Only Upstairs Bathroom', () => {
+          sound.playTone(300, 'sine', 0.35, 0.8, 120);
+          const isNew = saves.recordPropInspection('prop_bathroom');
+          showToast(isNew ? '🚽 OCCUPADO! Better get in line early! (+15 Pts)' : '🚽 Still occupied! Classic Loud House.', 'bg-[#4cc9f0]');
+        });
+
+        // --- LINCOLN'S ROOM: BED, BUN-BUN & SECRET CLUE #1 ---
+        this.addOutlinedBox(2.4, 0.8, 3.4, '#ff6b2b', -12.8, 0.7, -14.5);
+        const bunBun = this.addOutlinedBox(0.65, 0.8, 0.65, '#ffffff', -12.8, 1.4, -15.3);
+        this.registerInteractable(bunBun, 'prop_bunbun', 'Bun-Bun Plushie', () => {
+          sound.playPop();
+          const isNew = saves.recordPropInspection('prop_bunbun');
+          showToast(isNew ? '🐰 Bun-Bun approves of your outfit! (+15 Pts)' : '🐰 Lincoln’s trusty plush pal!', 'bg-[#ff6b2b] text-white');
+        });
+
+        const aceDesk = this.addOutlinedBox(1.8, 1.0, 1.1, '#ffd23f', -9.6, 0.8, -15.4);
+        this.registerInteractable(aceDesk, 'clue_lincoln', 'Ace Savvy Comic Desk (Inspect)', () => {
+          saves.discoverSecretClue('clue_lincoln');
+          showToast('🃏 CLUE 1/4: "Where shadows rhyme and bats reside..."', 'bg-[#ff6b2b] text-white');
+        });
+
+        // --- LORI & LENI'S ROOM: VANITY & MANNEQUIN ---
+        const vanity = this.addOutlinedBox(2.2, 1.2, 1.0, '#ffafcc', -5.5, 0.9, -15.5);
+        this.addOutlinedBox(1.4, 1.2, 0.15, '#caf0f8', -5.5, 2.0, -15.8);
+        this.registerInteractable(vanity, 'prop_vanity', 'Glamour Vanity Mirror', () => {
+          sound.playPop();
+          const isNew = saves.recordPropInspection('prop_vanity');
+          showToast(isNew ? '🪞 Looking literally amazing! (+15 Pts)' : '💄 42 shades of lip gloss!', 'bg-[#ff5d8f] text-white');
+        });
+
+        // --- LUNA & LUAN'S ROOM: AMP & MR. COCONUTS ---
+        const amp = this.addOutlinedBox(1.6, 1.7, 1.1, '#2b2d42', 1.8, 1.15, -15.4);
+        this.registerInteractable(amp, 'prop_amp', 'Luna’s Mega Amp (Strum!)', () => {
+          sound.playGuitarNote(0);
+          setTimeout(() => sound.playGuitarNote(2), 110);
+          setTimeout(() => sound.playGuitarNote(3), 220);
+          const isNew = saves.recordPropInspection('prop_amp');
+          showToast(isNew ? '⚡ *POWER CHORD!* Windows rattling! (+15 Pts)' : '🤘 Rock on, dude!', 'bg-[#845ec2] text-white');
+        });
+
+        const coconuts = this.addOutlinedBox(0.9, 1.3, 0.9, '#8d5524', 6.4, 0.95, -15.3);
+        this.registerInteractable(coconuts, 'prop_coconuts', 'Mr. Coconuts Dummy', () => {
+          sound.playRimshot();
+          const isNew = saves.recordPropInspection('prop_coconuts');
+          showToast(isNew ? '🥥 "Hey, I’m wooden you know it!" *Ba-dum-tss!* (+15 Pts)' : '🥥 Mr. Coconuts winks at you!', 'bg-[#ffd23f]');
+        });
+
+        // --- LYNN & LUCY'S ROOM: COFFIN (CLUE #2) & PUNCHING BAG ---
+        const coffin = this.addOutlinedBox(1.4, 0.85, 2.8, '#181828', 13.2, 0.72, -14.8);
+        this.registerInteractable(coffin, 'clue_lucy', 'Lucy’s Black Coffin (Inspect)', () => {
+          saves.discoverSecretClue('clue_lucy');
+          showToast('🦇 CLUE 2/4: "Seek green equations where beakers bubble..."', 'bg-[#2b2d42] text-white');
+        });
+
+        // --- LANA & LOLA'S ROOM: PRINCESS CASTLE BED & TOOLBOX ---
+        this.addOutlinedBox(2.4, 0.9, 2.6, '#ff5d8f', -17.2, 0.75, -14.8);
+        const toolbox = this.addOutlinedBox(1.3, 0.8, 0.9, '#e63946', -22.5, 0.7, -15.2);
+        this.registerInteractable(toolbox, 'prop_toolbox', 'Lana’s Muddy Toolbox', () => {
+          sound.playClick();
+          const isNew = saves.recordPropInspection('prop_toolbox');
+          showToast(isNew ? '🐸 Hops the frog hopped out and ribbited! (+15 Pts)' : '🔧 Wrenches, duct tape, and frog snacks!', 'bg-[#4361ee] text-white');
+        });
+
+        // --- LISA & LILY'S ROOM: BUBBLING LAB (CLUE #3) & CRIB ---
+        const labBench = this.addOutlinedBox(2.6, 1.1, 1.2, '#38b000', 17.2, 0.85, -15.2);
+        const beaker = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.28, 0.38, 0.85, 12),
+          new THREE.MeshStandardMaterial({ color: '#80ed99', emissive: '#38b000', emissiveIntensity: 0.4 })
+        );
+        beaker.position.set(17.2, 1.8, -15.2);
+        this.scene.add(beaker);
+        this.animatedObjects.push({ mesh: beaker, type: 'bob' });
+
+        this.registerInteractable(labBench, 'clue_lisa', 'Lisa’s Chalkboard & Lab (Inspect)', () => {
+          saves.discoverSecretClue('clue_lisa');
+          showToast('🧪 CLUE 3/4: "The final valve hides beneath the living room floor..."', 'bg-[#38b000] text-white');
+        });
+
+        // Lily's Crib
+        this.addOutlinedBox(2.2, 1.1, 1.6, '#fffdf5', 22.4, 0.85, -15.0);
+
+        // --- BASEMENT: WASHING MACHINE & SECRET VALVE (CLUE #4) ---
+        this.addOutlinedBox(1.8, 1.8, 1.6, '#f8f9fa', -22.2, 1.2, 0.5);
+        this.addOutlinedBox(1.8, 1.8, 1.6, '#e9ecef', -22.2, 1.2, 2.5);
+        const secretValve = this.addOutlinedBox(1.2, 1.6, 1.2, '#ffb703', -22.4, 1.1, 6.2);
+        this.registerInteractable(secretValve, 'clue_basement', 'Mysterious Basement Pipe Valve', () => {
+          saves.discoverSecretClue('clue_basement');
+          showToast('🪠 CLUE 4/4: Secret Vault Decoded!', 'bg-[#ffb703]');
+        });
+
+        // --- BACKYARD: KIDDIE POOL & MUD PIT ---
+        const pool = new THREE.Mesh(
+          new THREE.CylinderGeometry(2.6, 2.6, 0.5, 24),
+          new THREE.MeshStandardMaterial({ color: '#4cc9f0' })
+        );
+        pool.position.set(5.5, 0.35, -19.5);
+        this.scene.add(pool);
+      }
+
+      registerInteractable(mesh, id, label, action) {
+        mesh.userData = { interactable: true, id, label, action };
+        this.interactables.push(mesh);
+      }
+
+      buildCharacters() {
+        CHARACTERS.forEach(char => {
+          const group = new THREE.Group();
+          group.position.set(char.pos.x, 0.32, char.pos.z);
+
+          // Legs
+          const legMat = new THREE.MeshStandardMaterial({ color: '#2b2d42' });
+          const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.65, 0.24), legMat);
+          leftLeg.position.set(-0.18, 0.32, 0);
+          const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.65, 0.24), legMat);
+          rightLeg.position.set(0.18, 0.32, 0);
+          group.add(leftLeg, rightLeg);
+
+          // Torso
+          const torso = new THREE.Mesh(
+            new THREE.BoxGeometry(0.72, 0.85, 0.45),
+            new THREE.MeshStandardMaterial({ color: char.shirtColor })
+          );
+          torso.position.y = 1.05;
+          torso.castShadow = true;
+          group.add(torso);
+
+          // Head
+          const head = new THREE.Mesh(
+            new THREE.SphereGeometry(0.42, 16, 16),
+            new THREE.MeshStandardMaterial({ color: '#ffcdb2' })
+          );
+          head.position.y = 1.82;
+          head.castShadow = true;
+          group.add(head);
+
+          // Hair Cap
+          const hair = new THREE.Mesh(
+            new THREE.SphereGeometry(0.45, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55),
+            new THREE.MeshStandardMaterial({ color: char.hairColor })
+          );
+          hair.position.y = 1.86;
+          group.add(hair);
+
+          // Quest Indicator Floating Diamond above head
+          const marker = new THREE.Mesh(
+            new THREE.OctahedronGeometry(0.24, 0),
+            new THREE.MeshStandardMaterial({ color: '#ffd23f', emissive: '#ff9f1c', emissiveIntensity: 0.35 })
+          );
+          marker.position.y = 2.65;
+          group.add(marker);
+
+          this.scene.add(group);
+          this.characterMeshes[char.id] = { group, marker, data: char };
+
+          // Make torso & head clickable
+          [torso, head].forEach(part => {
+            this.registerInteractable(part, 'npc_' + char.id, `Talk to ${char.name}`, () => {
+              openCharacterDialogue(char);
+            });
+          });
+        });
+      }
+
+      createPlayerAvatar(shirtColor) {
+        if (this.playerGroup) {
+          this.scene.remove(this.playerGroup);
+        }
+        const group = new THREE.Group();
+
+        const legMat = new THREE.MeshStandardMaterial({ color: '#1d3557' });
+        this.leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.65, 0.25), legMat);
+        this.leftLeg.position.set(-0.18, 0.32, 0);
+        this.rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.65, 0.25), legMat);
+        this.rightLeg.position.set(0.18, 0.32, 0);
+        group.add(this.leftLeg, this.rightLeg);
+
+        const torso = new THREE.Mesh(
+          new THREE.BoxGeometry(0.76, 0.88, 0.46),
+          new THREE.MeshStandardMaterial({ color: shirtColor })
+        );
+        torso.position.y = 1.08;
+        torso.castShadow = true;
+        group.add(torso);
+
+        const head = new THREE.Mesh(
+          new THREE.SphereGeometry(0.43, 18, 18),
+          new THREE.MeshStandardMaterial({ color: '#ffd6ba' })
+        );
+        head.position.y = 1.86;
+        head.castShadow = true;
+        group.add(head);
+
+        // Cool spiky cap / hair
+        const cap = new THREE.Mesh(
+          new THREE.SphereGeometry(0.45, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.5),
+          new THREE.MeshStandardMaterial({ color: '#181828' })
+        );
+        cap.position.y = 1.9;
+        group.add(cap);
+
+        // Selection ring under player
+        const ring = new THREE.Mesh(
+          new THREE.RingGeometry(0.55, 0.72, 24),
+          new THREE.MeshBasicMaterial({ color: '#ffd23f', side: THREE.DoubleSide })
+        );
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.y = 0.04;
+        group.add(ring);
+
+        group.position.copy(this.playerPos);
+        this.scene.add(group);
+        this.playerGroup = group;
+      }
+
+      teleportToRoom(roomId) {
+        const room = ROOMS.find(r => r.id === roomId);
+        if (!room) return;
+        this.playerPos.set(room.center.x, 0.32, room.center.z);
+        this.targetPos = null;
+        if (this.playerGroup) {
+          this.playerGroup.position.copy(this.playerPos);
+        }
+        const p = saves.getCurrent();
+        if (p) {
+          p.position = { x: room.center.x, z: room.center.z };
+          p.currentRoom = roomId;
+          saves.persist();
+        }
+        updateRoomHUD(room);
+        sound.playPop();
+      }
+
+      cycleCamera() {
+        this.cameraMode = (this.cameraMode + 1) % 3;
+        const labels = ['Dollhouse View', 'Close Follow Cam', 'Neighborhood Overview'];
+        showToast(`🎥 Camera: ${labels[this.cameraMode]}`, 'bg-[#845ec2] text-white');
+        sound.playClick();
+      }
+
+      bindEvents() {
+        window.addEventListener('resize', () => {
+          this.camera.aspect = window.innerWidth / window.innerHeight;
+          this.camera.updateProjectionMatrix();
+          this.renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.addEventListener('keydown', (e) => {
+          if (isModalOpen()) return;
+          const k = e.key.toLowerCase();
+          this.keys[k] = true;
+          if (k === 'e' || k === ' ') {
+            triggerNearestInteraction();
+          }
+          if (k === 'q') this.camYaw -= 0.25;
+          if (k === 'r') this.camYaw += 0.25;
+        });
+
+        window.addEventListener('keyup', (e) => {
+          this.keys[e.key.toLowerCase()] = false;
+        });
+
+        // Click / Tap on 3D Canvas to move or interact
+        this.canvas.addEventListener('pointerdown', (e) => {
+          if (isModalOpen()) return;
+          sound.init();
+          this.pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+          this.pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+          this.raycaster.setFromCamera(this.pointer, this.camera);
+
+          // Check interactables first
+          const hits = this.raycaster.intersectObjects(this.interactables, false);
+          if (hits.length > 0) {
+            const obj = hits[0].object;
+            const worldPos = new THREE.Vector3();
+            obj.getWorldPosition(worldPos);
+            const dist = this.playerPos.distanceTo(worldPos);
+            if (dist < 6.0) {
+              obj.userData.action();
+              return;
+            } else {
+              // Walk toward it and queue interaction
+              this.targetPos = new THREE.Vector3(worldPos.x, 0.32, worldPos.z + 1.4);
+              this.queuedAction = obj.userData.action;
+              return;
+            }
+          }
+
+          // Otherwise move on floor plane
+          const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.32);
+          const intersectPt = new THREE.Vector3();
+          if (this.raycaster.ray.intersectPlane(floorPlane, intersectPt)) {
+            this.targetPos = this.clampToBounds(intersectPt);
+            this.queuedAction = null;
+          }
+        });
+      }
+
+      clampToBounds(pos) {
+        pos.x = Math.max(-24.2, Math.min(24.2, pos.x));
+        pos.z = Math.max(-21.2, Math.min(21.2, pos.z));
+        pos.y = 0.32;
+        return pos;
+      }
+
+      getNearestInteractable() {
+        let best = null;
+        let minDist = 3.6;
+        const tmp = new THREE.Vector3();
+        for (const obj of this.interactables) {
+          obj.getWorldPosition(tmp);
+          const d = this.playerPos.distanceTo(tmp);
+          if (d < minDist) {
+            minDist = d;
+            best = obj;
+          }
+        }
+        return best;
+      }
+
+      detectCurrentRoom() {
+        for (const r of ROOMS) {
+          if (
+            this.playerPos.x >= r.bounds.minX &&
+            this.playerPos.x <= r.bounds.maxX &&
+            this.playerPos.z >= r.bounds.minZ &&
+            this.playerPos.z <= r.bounds.maxZ
+          ) {
+            return r;
+          }
+        }
+        return ROOMS[0];
+      }
+
+      update(dt) {
+        const elapsed = this.clock.getElapsedTime();
+
+        // Animate NPCs & floating quest markers
+        const p = saves.getCurrent();
+        Object.values(this.characterMeshes).forEach((entry, idx) => {
+          entry.group.position.y = 0.32 + Math.sin(elapsed * 2.5 + idx) * 0.05;
+          entry.marker.rotation.y = elapsed * 2.2;
+          entry.marker.position.y = 2.65 + Math.sin(elapsed * 3.5 + idx) * 0.1;
+
+          // Color marker green if quest completed
+          if (p && entry.data.questId && p.completedQuests.includes(entry.data.questId)) {
+            entry.marker.material.color.set('#38b000');
+          } else {
+            entry.marker.material.color.set('#ffd23f');
+          }
+        });
+
+        // Animate props
+        this.animatedObjects.forEach((item, idx) => {
+          if (item.type === 'bob') {
+            item.mesh.position.y = 1.8 + Math.sin(elapsed * 3 + idx) * 0.08;
+            item.mesh.rotation.y = elapsed;
+          }
+        });
+
+        // Player Movement (Keyboard + Virtual Joystick + Click-to-Move)
+        let moveX = 0;
+        let moveZ = 0;
+        if (!isModalOpen()) {
+          if (this.keys['w'] || this.keys['arrowup']) moveZ -= 1;
+          if (this.keys['s'] || this.keys['arrowdown']) moveZ += 1;
+          if (this.keys['a'] || this.keys['arrowleft']) moveX -= 1;
+          if (this.keys['d'] || this.keys['arrowright']) moveX += 1;
+
+          if (Math.abs(this.joyVec.x) > 0.1 || Math.abs(this.joyVec.y) > 0.1) {
+            moveX = this.joyVec.x;
+            moveZ = this.joyVec.y;
+          }
+        }
+
+        let isMoving = false;
+        if (moveX !== 0 || moveZ !== 0) {
+          this.targetPos = null;
+          this.queuedAction = null;
+          const len = Math.hypot(moveX, moveZ);
+          moveX /= len;
+          moveZ /= len;
+          this.playerPos.x += moveX * this.playerSpeed * dt;
+          this.playerPos.z += moveZ * this.playerSpeed * dt;
+          this.clampToBounds(this.playerPos);
+          if (this.playerGroup) {
+            this.playerGroup.rotation.y = Math.atan2(moveX, moveZ);
+          }
+          isMoving = true;
+        } else if (this.targetPos) {
+          const dx = this.targetPos.x - this.playerPos.x;
+          const dz = this.targetPos.z - this.playerPos.z;
+          const dist = Math.hypot(dx, dz);
+          if (dist > 0.35) {
+            this.playerPos.x += (dx / dist) * this.playerSpeed * dt;
+            this.playerPos.z += (dz / dist) * this.playerSpeed * dt;
+            this.clampToBounds(this.playerPos);
+            if (this.playerGroup) {
+              this.playerGroup.rotation.y = Math.atan2(dx, dz);
+            }
+            isMoving = true;
+          } else {
+            this.targetPos = null;
+            if (this.queuedAction) {
+              const fn = this.queuedAction;
+              this.queuedAction = null;
+              fn();
+            }
+          }
+        }
+
+        // Player walking leg swing & footsteps
+        if (this.playerGroup) {
+          this.playerGroup.position.copy(this.playerPos);
+          if (isMoving) {
+            this.leftLeg.rotation.x = Math.sin(elapsed * 14) * 0.55;
+            this.rightLeg.rotation.x = -Math.sin(elapsed * 14) * 0.55;
+            this.stepTimer += dt;
+            if (this.stepTimer > 0.32) {
+              this.stepTimer = 0;
+              sound.playStep();
+            }
+          } else {
+            this.leftLeg.rotation.x = 0;
+            this.rightLeg.rotation.x = 0;
+          }
+        }
+
+        // Smooth Camera Follow
+        const offsets = [
+          { y: 15.5, z: 16.5 }, // Dollhouse elevated
+          { y: 8.5, z: 10.5 },  // Close follow
+          { y: 26.0, z: 24.0 }  // Neighborhood overview
+        ];
+        const cfg = offsets[this.cameraMode];
+        const sinY = Math.sin(this.camYaw) * cfg.z;
+        const cosY = Math.cos(this.camYaw) * cfg.z;
+        const desiredCam = new THREE.Vector3(
+          this.playerPos.x + sinY,
+          this.playerPos.y + cfg.y,
+          this.playerPos.z + cosY
+        );
+        this.camera.position.lerp(desiredCam, 0.08);
+        this.camera.lookAt(this.playerPos.x, this.playerPos.y + 1.0, this.playerPos.z - 1.2);
+
+        // Update Room & Nearest Prompt
+        const curRoom = this.detectCurrentRoom();
+        if (curRoom && this._lastRoomId !== curRoom.id) {
+          this._lastRoomId = curRoom.id;
+          updateRoomHUD(curRoom);
+        }
+
+        const nearest = this.getNearestInteractable();
+        const promptEl = document.getElementById('interact-prompt');
+        const promptTxt = document.getElementById('interact-prompt-text');
+        if (nearest && !isModalOpen()) {
+          promptEl.classList.remove('hidden');
+          promptTxt.textContent = nearest.userData.label;
+        } else {
+          promptEl.classList.add('hidden');
+        }
+      }
+
+      render() {
+        const dt = Math.min(this.clock.getDelta(), 0.05);
+        this.update(dt);
+        this.renderer.render(this.scene, this.camera);
+        requestAnimationFrame(() => this.render());
+      }
+    }
+
+    // =========================================================================
+    // 5. PLAYABLE MINI-GAME ENGINE (7 DISTINCT MINI-GAMES)
+    // =========================================================================
+    class MiniGameEngine {
+      constructor() {
+        this.activeInterval = null;
+        this.activeAnimFrame = null;
+        this.keyHandler = null;
+      }
+
+      stopAll() {
+        if (this.activeInterval) clearInterval(this.activeInterval);
+        if (this.activeAnimFrame) cancelAnimationFrame(this.activeAnimFrame);
+        if (this.keyHandler) window.removeEventListener('keydown', this.keyHandler);
+        this.activeInterval = null;
+        this.activeAnimFrame = null;
+        this.keyHandler = null;
+      }
+
+      launch(type) {
+        this.stopAll();
+        const modal = document.getElementById('minigame-modal');
+        const body = document.getElementById('mg-body');
+        const scoreEl = document.getElementById('mg-score');
+        const timerEl = document.getElementById('mg-timer');
+        const bestEl = document.getElementById('mg-best-score');
+        const p = saves.getCurrent();
+        bestEl.textContent = `Best: ${(p && p.bestScores[type]) || 0}`;
+        scoreEl.textContent = '0';
+        modal.classList.remove('hidden');
+
+        if (type === 'rhythm') this.startRhythmGame(body, scoreEl, timerEl);
+        else if (type === 'logic') this.startLogicGrid(body, scoreEl, timerEl);
+        else if (type === 'sports') this.startSportsGame(body, scoreEl, timerEl);
+        else if (type === 'closet') this.startClosetGame(body, scoreEl, timerEl);
+        else if (type === 'comedy') this.startComedyGame(body, scoreEl, timerEl);
+        else if (type === 'gothic') this.startGothicHunt(body, scoreEl, timerEl);
+        else if (type === 'balance') this.startTwinBalance(body, scoreEl, timerEl);
+        else if (type === 'peekaboo') this.startLilyBlocks(body, scoreEl, timerEl);
+      }
+
+      finishGame(gameKey, questId, score, goalMet, summaryMsg) {
+        this.stopAll();
+        saves.recordMiniGameScore(gameKey, score);
+        const body = document.getElementById('mg-body');
+        let bonusBanner = '';
+
+        if (goalMet) {
+          sound.playSuccess();
+          const awarded = saves.awardQuest(questId);
+          if (awarded) {
+            bonusBanner = `<div class="bg-[#ffd23f] border-3 border-[#181828] px-4 py-2 rounded-xl font-bangers text-xl mt-3">
+              🎉 QUEST COMPLETE! +${awarded.rewardPts} CHAOS POINTS & NEW BADGE!
+            </div>`;
+          } else {
+            bonusBanner = `<div class="bg-[#1ecbe1] border-3 border-[#181828] px-4 py-2 rounded-xl font-bold text-sm mt-3">
+              ⭐ Encore Victory! High score recorded!
+            </div>`;
+          }
+        } else {
+          sound.playError();
+        }
+
+        body.innerHTML = `
+          <div class="text-center max-w-md animate-pop">
+            <div class="text-5xl mb-2">${goalMet ? '🤘🏆' : '😅🎸'}</div>
+            <h4 class="font-bangers text-4xl text-[#181828]">${goalMet ? 'NAILED IT!' : 'SO CLOSE!'}</h4>
+            <p class="font-bold text-slate-700 mt-1">${summaryMsg}</p>
+            <div class="font-bangers text-3xl text-[#ff6b2b] mt-2">Final Score: ${score}</div>
+            ${bonusBanner}
+            <div class="flex gap-3 justify-center mt-5">
+              <button id="mg-replay-btn" class="comic-btn bg-[#38b000] text-white px-5 py-2.5 font-bangers text-xl">Play Again ↻</button>
+              <button id="mg-done-btn" class="comic-btn bg-[#ffd23f] px-5 py-2.5 font-bangers text-xl">Back to House</button>
+            </div>
+          </div>
+        `;
+
+        document.getElementById('mg-replay-btn').onclick = () => this.launch(gameKey);
+        document.getElementById('mg-done-btn').onclick = () => closeAllModals();
+        refreshHUD();
+      }
+
+      // MINI-GAME 1: LUNA'S ROCKIN' RHYTHM JAM
+      startRhythmGame(body, scoreEl, timerEl) {
+        document.getElementById('mg-host-tag').textContent = "Luna Loud's Stage";
+        document.getElementById('mg-title').textContent = "ROCKIN' RHYTHM JAM";
+        document.getElementById('mg-instruction-text').textContent = "Tap Lanes [1-4] or Keys [D, F, J, K] when notes reach the target zone! Goal: 150 pts";
+
+        let score = 0;
+        let timeLeft = 24;
+        let notes = [];
+        const laneColors = ['#ff5d8f', '#ffd23f', '#1ecbe1', '#38b000'];
+        const laneKeys = ['D', 'F', 'J', 'K'];
+
+        body.innerHTML = `
+          <div class="w-full max-w-md">
+            <div id="rhythm-highway" class="relative h-64 bg-[#181828] border-4 border-[#181828] rounded-2xl overflow-hidden grid grid-cols-4">
+              <div class="border-r border-white/15"></div>
+              <div class="border-r border-white/15"></div>
+              <div class="border-r border-white/15"></div>
+              <div></div>
+              <div class="absolute bottom-4 inset-x-0 h-10 bg-white/15 border-y-2 border-[#ffd23f] pointer-events-none"></div>
+            </div>
+            <div class="grid grid-cols-4 gap-2 mt-3">
+              ${laneColors.map((c, i) => `
+                <button data-lane="${i}" class="rhythm-pad comic-btn py-3 font-bangers text-xl text-[#181828]" style="background:${c}">
+                  ${laneKeys[i]}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        `;
+
+        const highway = document.getElementById('rhythm-highway');
+
+        const hitLane = (lane) => {
+          sound.playGuitarNote(lane);
+          const pad = body.querySelector(`[data-lane="${lane}"]`);
+          if (pad) {
+            pad.classList.add('lane-hit');
+            setTimeout(() => pad.classList.remove('lane-hit'), 100);
+          }
+          // Find lowest note in this lane near bottom (y between 165 and 235)
+          const idx = notes.findIndex(n => n.lane === lane && n.y >= 160 && n.y <= 240);
+          if (idx !== -1) {
+            notes[idx].el.remove();
+            notes.splice(idx, 1);
+            score += 20;
+            scoreEl.textContent = score;
+          }
+        };
+
+        body.querySelectorAll('.rhythm-pad').forEach(btn => {
+          btn.addEventListener('pointerdown', () => hitLane(Number(btn.dataset.lane)));
+        });
+
+        this.keyHandler = (e) => {
+          const map = { d: 0, f: 1, j: 2, k: 3 };
+          if (map[e.key.toLowerCase()] !== undefined) hitLane(map[e.key.toLowerCase()]);
+        };
+        window.addEventListener('keydown', this.keyHandler);
+
+        let spawnTick = 0;
+        this.activeInterval = setInterval(() => {
+          timeLeft -= 0.05;
+          timerEl.textContent = Math.max(0, Math.ceil(timeLeft)) + 's';
+          spawnTick++;
+          if (spawnTick % 11 === 0) {
+            const lane = Math.floor(Math.random() * 4);
+            const el = document.createElement('div');
+            el.className = 'absolute w-1/4 px-2 pointer-events-none';
+            el.style.left = (lane * 25) + '%';
+            el.style.top = '0px';
+            el.innerHTML = `<div class="h-7 rounded-xl border-2 border-white shadow-md flex items-center justify-center font-bold text-xs" style="background:${laneColors[lane]}">🎵</div>`;
+            highway.appendChild(el);
+            notes.push({ lane, y: 0, el });
+          }
+
+          for (let i = notes.length - 1; i >= 0; i--) {
+            notes[i].y += 5.5;
+            notes[i].el.style.top = notes[i].y + 'px';
+            if (notes[i].y > 250) {
+              notes[i].el.remove();
+              notes.splice(i, 1);
+            }
+          }
+
+          if (timeLeft <= 0) {
+            this.finishGame('rhythm', 'q_luna', score, score >= 150, `You rocked the house with ${score} rhythm points!`);
+          }
+        }, 50);
+      }
+
+      // MINI-GAME 2: LISA'S CHEMICAL REACTION LOGIC GRID
+      startLogicGrid(body, scoreEl, timerEl) {
+        document.getElementById('mg-host-tag').textContent = "Lisa Loud's Lab";
+        document.getElementById('mg-title').textContent = "ISOTOPIC LOGIC GRID";
+        document.getElementById('mg-instruction-text').textContent = "Tap any beaker to flip it and its neighbors. Turn all 9 beakers GREEN!";
+
+        let moves = 0;
+        timerEl.textContent = 'Puzzle';
+        // Solvable starting state
+        let grid = [1, 0, 1, 0, 1, 0, 1, 0, 1];
+
+        const render = () => {
+          scoreEl.textContent = Math.max(50, 300 - moves * 15);
+          body.innerHTML = `
+            <div class="text-center">
+              <div class="grid grid-cols-3 gap-3 bg-[#181828] p-4 rounded-2xl border-4 border-[#181828]">
+                ${grid.map((val, idx) => `
+                  <button data-idx="${idx}" class="logic-cell comic-btn w-20 h-20 md:w-24 md:h-24 text-3xl flex items-center justify-center ${val ? 'bg-[#38b000] text-white' : 'bg-[#845ec2] text-white'}">
+                    ${val ? '🧪' : '⚗️'}
+                  </button>
+                `).join('')}
+              </div>
+              <p class="text-xs font-bold text-slate-600 mt-3">Moves Used: ${moves}</p>
+            </div>
+          `;
+
+          body.querySelectorAll('.logic-cell').forEach(btn => {
+            btn.onclick = () => {
+              const i = Number(btn.dataset.idx);
+              const r = Math.floor(i / 3);
+              const c = i % 3;
+              const toggle = (rr, cc) => {
+                if (rr >= 0 && rr < 3 && cc >= 0 && cc < 3) {
+                  const k = rr * 3 + cc;
+                  grid[k] = grid[k] ? 0 : 1;
+                }
+              };
+              toggle(r, c);
+              toggle(r - 1, c);
+              toggle(r + 1, c);
+              toggle(r, c - 1);
+              toggle(r, c + 1);
+              moves++;
+              sound.playPop();
+              if (grid.every(v => v === 1)) {
+                const finalScore = Math.max(100, 300 - moves * 15);
+                this.finishGame('logic', 'q_lisa', finalScore, true, `Compound stabilized in ${moves} moves!`);
+              } else {
+                render();
+              }
+            };
+          });
+        };
+        render();
+      }
+
+      // MINI-GAME 3: LYNN'S HALLWAY SLAPSHOT CHALLENGE
+      startSportsGame(body, scoreEl, timerEl) {
+        document.getElementById('mg-host-tag').textContent = "Lynn Loud Jr.'s Arena";
+        document.getElementById('mg-title').textContent = "HALLWAY SLAPSHOT CHALLENGE";
+        document.getElementById('mg-instruction-text').textContent = "Tap SHOOT when the puck aligns with the moving goal net! Goal: 8 Goals";
+
+        let goals = 0;
+        let timeLeft = 25;
+        let puckX = 50;
+        let dir = 1;
+        let goalX = 50;
+
+        body.innerHTML = `
+          <div class="w-full max-w-md text-center">
+            <div class="relative h-52 bg-[#d8f3dc] border-4 border-[#181828] rounded-2xl overflow-hidden mb-4">
+              <div id="lynn-goal" class="absolute top-4 w-24 h-12 bg-[#e63946] border-3 border-[#181828] rounded-xl flex items-center justify-center text-white font-bangers text-lg" style="left: calc(50% - 48px);">
+                🥅 GOAL
+              </div>
+              <div id="lynn-puck" class="absolute bottom-5 w-10 h-10 bg-[#181828] text-white rounded-full flex items-center justify-center font-bold shadow-md" style="left: calc(50% - 20px);">
+                🏒
+              </div>
+            </div>
+            <button id="btn-slapshot" class="comic-btn bg-[#e63946] text-white px-8 py-3.5 font-bangers text-2xl tracking-wider">
+              SLAPSHOT! ⚡
+            </button>
+          </div>
+        `;
+
+        const goalEl = document.getElementById('lynn-goal');
+        const puckEl = document.getElementById('lynn-puck');
+
+        document.getElementById('btn-slapshot').onclick = () => {
+          if (Math.abs(puckX - goalX) <= 15) {
+            goals++;
+            scoreEl.textContent = goals * 25;
+            sound.playSuccess();
+            goalX = 18 + Math.random() * 64;
+            goalEl.style.left = `calc(${goalX}% - 48px)`;
+            if (goals >= 8) {
+              this.finishGame('sports', 'q_lynn', goals * 25, true, `Hat-trick legend! You scored ${goals} hallway goals!`);
+            }
+          } else {
+            sound.playError();
+          }
+        };
+
+        this.activeInterval = setInterval(() => {
+          timeLeft -= 0.04;
+          timerEl.textContent = Math.max(0, Math.ceil(timeLeft)) + 's';
+          puckX += dir * 3.1;
+          if (puckX > 88 || puckX < 12) dir *= -1;
+          puckEl.style.left = `calc(${puckX}% - 20px)`;
+          if (timeLeft <= 0) {
+            this.finishGame('sports', 'q_lynn', goals * 25, goals >= 8, `You scored ${goals}/8 goals!`);
+          }
+        }, 40);
+      }
+
+      // MINI-GAME 4: LORI & LENI'S CLOSET CHAOS ORGANIZER
+      startClosetGame(body, scoreEl, timerEl) {
+        document.getElementById('mg-host-tag').textContent = "Lori & Leni's Boutique";
+        document.getElementById('mg-title').textContent = "CLOSET CHAOS ORGANIZER";
+        document.getElementById('mg-instruction-text').textContent = "Sort 10 items into Lori's Phone/Tech bin or Leni's Fashion bin!";
+
+        const items = [
+          { icon: '📱', name: 'Smartphone', owner: 'lori' },
+          { icon: '🕶️', name: 'Sun Hat & Shades', owner: 'leni' },
+          { icon: '🔋', name: 'Portable Charger', owner: 'lori' },
+          { icon: '👗', name: 'Teal Sundress', owner: 'leni' },
+          { icon: '📅', name: 'Date Planner', owner: 'lori' },
+          { icon: '🧣', name: 'Silk Scarf', owner: 'leni' },
+          { icon: '🎧', name: 'Earbuds', owner: 'lori' },
+          { icon: '👜', name: 'Designer Tote', owner: 'leni' }
+        ];
+
+        let sorted = 0;
+        let timeLeft = 25;
+        let current = items[Math.floor(Math.random() * items.length)];
+
+        const render = () => {
+          scoreEl.textContent = sorted * 20;
+          body.innerHTML = `
+            <div class="w-full max-w-md text-center">
+              <div class="comic-panel-sm bg-white p-6 mb-5 inline-block min-w-[210px]">
+                <div class="text-6xl mb-2">${current.icon}</div>
+                <div class="font-bangers text-2xl">${current.name}</div>
+                <div class="text-xs font-bold text-slate-500 mt-1">Sorted: ${sorted} / 10</div>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <button id="bin-lori" class="comic-btn bg-[#1ecbe1] p-4 font-bangers text-2xl">
+                  📱 LORI'S BIN
+                </button>
+                <button id="bin-leni" class="comic-btn bg-[#ff5d8f] text-white p-4 font-bangers text-2xl">
+                  👗 LENI'S BIN
+                </button>
+              </div>
+            </div>
+          `;
+
+          const pick = (who) => {
+            if (current.owner === who) {
+              sorted++;
+              sound.playPop();
+              if (sorted >= 10) {
+                this.finishGame('closet', 'q_lorileni', sorted * 20, true, 'Closet organized in record time!');
+                return;
+              }
+            } else {
+              sound.playError();
+            }
+            current = items[Math.floor(Math.random() * items.length)];
+            render();
+          };
+
+          document.getElementById('bin-lori').onclick = () => pick('lori');
+          document.getElementById('bin-leni').onclick = () => pick('leni');
+        };
+
+        render();
+        this.activeInterval = setInterval(() => {
+          timeLeft -= 1;
+          timerEl.textContent = timeLeft + 's';
+          if (timeLeft <= 0) {
+            this.finishGame('closet', 'q_lorileni', sorted * 20, sorted >= 10, `You sorted ${sorted}/10 items!`);
+          }
+        }, 1000);
+      }
+
+      // MINI-GAME 5: LUAN'S COMEDY CLUB PUNCHLINE CHALLENGE
+      startComedyGame(body, scoreEl, timerEl) {
+        document.getElementById('mg-host-tag').textContent = "Luan & Mr. Coconuts";
+        document.getElementById('mg-title').textContent = "COMEDY CLUB PUNCHLINE";
+        document.getElementById('mg-instruction-text').textContent = "Pick the funniest pun punchline for each setup!";
+
+        const jokes = [
+          {
+            setup: "What do you call a sleeping bull at the Loud House?",
+            options: ["A bull-dozer! Ha-ha!", "A loud cow.", "A sleepy steak."],
+            best: 0
+          },
+          {
+            setup: "Why did Lincoln bring a ladder to his comic desk?",
+            options: ["To paint the ceiling.", "Because the stakes were high!", "To reach his bed."],
+            best: 1
+          },
+          {
+            setup: "What kind of music do Lisa's chemical beakers listen to?",
+            options: ["Heavy metal!", "Classical violin.", "Pop fizz!"],
+            best: 0
+          },
+          {
+            setup: "Why don't skeletons ever fight in Lucy's room?",
+            options: ["They are too polite.", "They don't have the guts!", "Edwin told them not to."],
+            best: 1
+          }
+        ];
+
+        let qIdx = 0;
+        let laughs = 0;
+        timerEl.textContent = '4 Jokes';
+
+        const render = () => {
+          scoreEl.textContent = laughs;
+          const j = jokes[qIdx];
+          body.innerHTML = `
+            <div class="w-full max-w-lg text-center">
+              <div class="bg-[#ffd23f] border-3 border-[#181828] rounded-2xl p-4 mb-4 font-comic font-bold text-lg">
+                🎙️ "${j.setup}"
+              </div>
+              <div class="space-y-2.5">
+                ${j.options.map((opt, idx) => `
+                  <button data-opt="${idx}" class="joke-opt comic-btn w-full py-3 px-4 bg-white text-left font-bold text-base">
+                    ${idx + 1}. ${opt}
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          `;
+
+          body.querySelectorAll('.joke-opt').forEach(btn => {
+            btn.onclick = () => {
+              const choice = Number(btn.dataset.opt);
+              if (choice === j.best) {
+                laughs += 50;
+                sound.playRimshot();
+              } else {
+                sound.playError();
+              }
+              qIdx++;
+              if (qIdx >= jokes.length) {
+                this.finishGame('comedy', 'q_luan', laughs, laughs >= 150, `Laugh-O-Meter reached ${laughs} points!`);
+              } else {
+                render();
+              }
+            };
+          });
+        };
+        render();
+      }
+
+      // MINI-GAME 6: LUCY'S GOTHIC HIDDEN ARTIFACT HUNT
+      startGothicHunt(body, scoreEl, timerEl) {
+        document.getElementById('mg-host-tag').textContent = "Lucy Loud's Shadows";
+        document.getElementById('mg-title').textContent = "SHADOW ARTIFACT HUNT";
+        document.getElementById('mg-instruction-text').textContent = "Spot and click all 6 hidden poetic relics in the dim attic shadows!";
+
+        const relics = [
+          { icon: '🕯️', x: 14, y: 22 },
+          { icon: '🦇', x: 78, y: 18 },
+          { icon: '📜', x: 46, y: 65 },
+          { icon: '🕷️', x: 22, y: 74 },
+          { icon: '🖤', x: 82, y: 68 },
+          { icon: '🔮', x: 52, y: 28 }
+        ];
+        let found = 0;
+        let timeLeft = 25;
+
+        body.innerHTML = `
+          <div id="gothic-scene" class="relative w-full max-w-lg h-64 bg-gradient-to-b from-[#181828] to-[#2b2d42] border-4 border-[#181828] rounded-2xl overflow-hidden">
+            <div class="absolute inset-0 flex items-center justify-center text-white/10 font-bangers text-5xl pointer-events-none">
+              SIGH... SHADOWS
+            </div>
+            ${relics.map((r, i) => `
+              <button data-r="${i}" class="gothic-relic absolute text-2xl opacity-45 hover:opacity-100 transition-opacity p-2" style="left:${r.x}%; top:${r.y}%;">
+                ${r.icon}
+              </button>
+            `).join('')}
+          </div>
+        `;
+
+        body.querySelectorAll('.gothic-relic').forEach(btn => {
+          btn.onclick = () => {
+            if (btn.disabled) return;
+            btn.disabled = true;
+            btn.classList.remove('opacity-45');
+            btn.classList.add('scale-125');
+            found++;
+            scoreEl.textContent = found * 30;
+            sound.playSecret();
+            if (found >= 6) {
+              this.finishGame('gothic', 'q_lucy', found * 30, true, 'All 6 dark relics returned to Edwin!');
+            }
+          };
+        });
+
+        this.activeInterval = setInterval(() => {
+          timeLeft -= 1;
+          timerEl.textContent = timeLeft + 's';
+          if (timeLeft <= 0) {
+            this.finishGame('gothic', 'q_lucy', found * 30, found >= 6, `You found ${found}/6 relics.`);
+          }
+        }, 1000);
+      }
+
+      // MINI-GAME 7: LANA & LOLA'S MUD-PIPE & TIARA BALANCE
+      startTwinBalance(body, scoreEl, timerEl) {
+        document.getElementById('mg-host-tag').textContent = "Lana & Lola's Twin Crisis";
+        document.getElementById('mg-title').textContent = "WRENCHES & TIARA BALANCE";
+        document.getElementById('mg-instruction-text').textContent = "Tap leaking pipes to fix them AND tap Left/Right to keep Lola's Tiara centered!";
+
+        let tilt = 0; // -50 to 50
+        let fixed = 0;
+        let timeLeft = 20;
+
+        body.innerHTML = `
+          <div class="w-full max-w-md space-y-4 text-center">
+            <div class="bg-[#ffafcc] border-3 border-[#181828] rounded-2xl p-3">
+              <div class="text-xs font-extrabold uppercase mb-1">👑 Lola's Tea Tray Balance</div>
+              <div class="w-full h-5 bg-white border-2 border-[#181828] rounded-full relative overflow-hidden">
+                <div id="tray-dot" class="w-6 h-full bg-[#ff5d8f] border-x-2 border-[#181828] absolute top-0 transition-all" style="left: calc(50% - 12px);"></div>
+              </div>
+              <div class="flex justify-center gap-4 mt-2">
+                <button id="tilt-left" class="comic-btn bg-white px-4 py-1 text-xs">⬅️ Steady Left</button>
+                <button id="tilt-right" class="comic-btn bg-white px-4 py-1 text-xs">Steady Right ➡️</button>
+              </div>
+            </div>
+
+            <div class="bg-[#caf0f8] border-3 border-[#181828] rounded-2xl p-4">
+              <div class="text-xs font-extrabold uppercase mb-2">🔧 Lana's Leaky Pipes (Fixed: <span id="pipe-count">0</span>/6)</div>
+              <div class="grid grid-cols-3 gap-2.5">
+                ${[0, 1, 2, 3, 4, 5].map(i => `
+                  <button data-pipe="${i}" class="pipe-btn comic-btn bg-[#4361ee] text-white py-3 text-xl">
+                    💦🔧
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+
+        document.getElementById('tilt-left').onclick = () => { tilt = Math.max(-45, tilt - 14); sound.playClick(); };
+        document.getElementById('tilt-right').onclick = () => { tilt = Math.min(45, tilt + 14); sound.playClick(); };
+
+        body.querySelectorAll('.pipe-btn').forEach(btn => {
+          btn.onclick = () => {
+            if (btn.disabled) return;
+            btn.disabled = true;
+            btn.textContent = '✅';
+            btn.classList.replace('bg-[#4361ee]', 'bg-[#38b000]');
+            fixed++;
+            document.getElementById('pipe-count').textContent = fixed;
+            scoreEl.textContent = fixed * 30;
+            sound.playPop();
+            if (fixed >= 6) {
+              this.finishGame('balance', 'q_lanalola', fixed * 30, true, 'Pipes sealed and not a drop spilled on Lola!');
+            }
+          };
+        });
+
+        this.activeInterval = setInterval(() => {
+          timeLeft -= 0.1;
+          timerEl.textContent = Math.max(0, Math.ceil(timeLeft)) + 's';
+          tilt += (Math.random() - 0.48) * 6;
+          const dot = document.getElementById('tray-dot');
+          if (dot) dot.style.left = `calc(${50 + tilt}% - 12px)`;
+          if (Math.abs(tilt) > 46) {
+            this.finishGame('balance', 'q_lanalola', fixed * 30, false, 'Whoops! Lola’s tea tray tipped over!');
+          } else if (timeLeft <= 0) {
+            this.finishGame('balance', 'q_lanalola', fixed * 30, fixed >= 6, `Fixed ${fixed}/6 pipes!`);
+          }
+        }, 100);
+      }
+
+      // MINI-GAME 8: LILY'S PEEK-A-BOO BLOCKS
+      startLilyBlocks(body, scoreEl, timerEl) {
+        document.getElementById('mg-host-tag').textContent = "Lily Loud's Nursery";
+        document.getElementById('mg-title').textContent = "PEEK-A-BOO RATTLE BLOCKS";
+        document.getElementById('mg-instruction-text').textContent = "Tap the glowing baby blocks to make Lily giggle! Goal: 8 Giggles";
+
+        let giggles = 0;
+        let activeIdx = 0;
+        timerEl.textContent = 'Playtime';
+
+        const render = () => {
+          scoreEl.textContent = giggles * 15;
+          body.innerHTML = `
+            <div class="text-center">
+              <div class="text-4xl mb-3">👶🏼✨ "Poo-poo! Ga-ga!"</div>
+              <div class="grid grid-cols-3 gap-3">
+                ${[0, 1, 2, 3, 4, 5].map(i => `
+                  <button data-b="${i}" class="lily-blk comic-btn w-20 h-20 text-3xl ${i === activeIdx ? 'bg-[#ffd23f] animate-bounce' : 'bg-white'}">
+                    ${i === activeIdx ? '🍼' : '🧸'}
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          `;
+          body.querySelectorAll('.lily-blk').forEach(btn => {
+            btn.onclick = () => {
+              if (Number(btn.dataset.b) === activeIdx) {
+                giggles++;
+                sound.playPop();
+                if (giggles >= 8) {
+                  this.finishGame('peekaboo', 'q_lily', giggles * 15, true, 'Lily is giggling nonstop!');
+                  return;
+                }
+                activeIdx = Math.floor(Math.random() * 6);
+                render();
+              }
+            };
+          });
+        };
+        render();
+      }
+    }
+
+    const miniGames = new MiniGameEngine();
+
+    // =========================================================================
+    // 6. UI CONTROLLER, MODALS, DIALOGUE & MOBILE TOUCH CONTROLS
+    // =========================================================================
+    let world3D = null;
+
+    function isModalOpen() {
+      return (
+        !document.getElementById('title-screen').classList.contains('hidden') ||
+        !document.getElementById('dialogue-modal').classList.contains('hidden') ||
+        !document.getElementById('minigame-modal').classList.contains('hidden') ||
+        !document.getElementById('hub-modal').classList.contains('hidden')
+      );
+    }
+
+    function showToast(msg, bgClass = 'bg-[#ffd23f]') {
+      const container = document.getElementById('toast-container');
+      const el = document.createElement('div');
+      el.className = `comic-panel-sm ${bgClass} px-4 py-2 text-center font-bold text-xs md:text-sm animate-pop shadow-lg`;
+      el.textContent = msg;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transition = 'opacity 0.3s';
+        setTimeout(() => el.remove(), 300);
+      }, 2800);
+    }
+
+    function updateRoomHUD(room) {
+      document.getElementById('hud-room-name').textContent = room.name;
+      document.getElementById('hud-room-name-mobile').textContent = room.name;
+    }
+
+    function refreshHUD() {
+      const p = saves.getCurrent();
+      if (!p) return;
+      document.getElementById('hud-player-name').textContent = p.name;
+      document.getElementById('hud-avatar-dot').textContent = p.name[0].toUpperCase();
+      document.getElementById('hud-avatar-dot').style.backgroundColor = p.shirtColor;
+      document.getElementById('hud-chaos-pts').textContent = p.chaosPoints;
+      const pct = saves.getCompletionPercent(p);
+      document.getElementById('hud-completion').textContent = pct;
+      document.getElementById('hud-quest-count').textContent = `${p.completedQuests.length}/${QUESTS.length}`;
+
+      let rank = 'Rookie Houseguest';
+      if (pct >= 80) rank = 'Honorary Loud!';
+      else if (pct >= 45) rank = 'Chaos Survivor';
+      else if (pct >= 20) rank = 'Ace Deputy';
+      document.getElementById('hud-rank-badge').textContent = rank;
+
+      // Dynamic objective text
+      const sisterQuestsDone = p.completedQuests.filter(id => !['q_lincoln', 'q_clyde', 'q_secret'].includes(id)).length;
+      const objEl = document.getElementById('hud-objective-text');
+      if (!p.completedQuests.includes('q_lincoln')) {
+        if (sisterQuestsDone >= 4) {
+          objEl.textContent = `You helped ${sisterQuestsDone} sisters! Report back to Lincoln in the Living Room!`;
+        } else {
+          objEl.textContent = `Help Loud sisters with their room crises (${sisterQuestsDone}/4 completed for Lincoln's main plan).`;
+        }
+      } else if (p.secretClues.length < 4) {
+        objEl.textContent = `Main plan complete! Find the hidden Ace Savvy clues (${p.secretClues.length}/4 discovered).`;
+      } else {
+        objEl.textContent = `100% Chaos Master! Replay mini-games or explore every prop in 1216 Franklin Ave!`;
+      }
+    }
+
+    function openCharacterDialogue(char) {
+      sound.playPop();
+      const p = saves.getCurrent();
+      const modal = document.getElementById('dialogue-modal');
+      document.getElementById('dlg-avatar').textContent = char.emoji;
+      document.getElementById('dlg-avatar').style.backgroundColor = char.shirtColor;
+      document.getElementById('dlg-name').textContent = char.name;
+      document.getElementById('dlg-role').textContent = char.role;
+
+      const isDone = p && char.questId && p.completedQuests.includes(char.questId);
+      const sisterQuestsDone = p ? p.completedQuests.filter(id => !['q_lincoln', 'q_clyde', 'q_secret'].includes(id)).length : 0;
+
+      // Special Lincoln main quest completion check
+      if (char.id === 'lincoln' && !isDone && sisterQuestsDone >= 4) {
+        const awarded = saves.awardQuest('q_lincoln');
+        if (awarded) {
+          sound.playSuccess();
+          showToast(`🃏 MAIN QUEST COMPLETE! +${awarded.rewardPts} Chaos Pts!`, 'bg-[#38b000] text-white');
+          refreshHUD();
+        }
+      }
+
+      const nowDone = p && char.questId && p.completedQuests.includes(char.questId);
+      document.getElementById('dlg-status').textContent = nowDone ? '✅ Quest Completed!' : '⚡ Active Household Crisis';
+      document.getElementById('dlg-text').textContent = `"${nowDone ? char.complete : char.intro}"`;
+
+      const actions = document.getElementById('dlg-actions');
+      actions.innerHTML = '';
+
+      if (char.minigame) {
+        const playBtn = document.createElement('button');
+        playBtn.className = 'comic-btn bg-[#38b000] text-white px-5 py-2.5 font-bangers text-xl tracking-wide';
+        playBtn.textContent = nowDone ? 'Replay Mini-Game 🎮' : 'Accept Challenge! 🎮';
+        playBtn.onclick = () => {
+          modal.classList.add('hidden');
+          miniGames.launch(char.minigame);
+        };
+        actions.appendChild(playBtn);
+      }
+
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'comic-btn bg-[#ffd23f] px-5 py-2.5 font-bold text-sm';
+      closeBtn.textContent = 'Catch You Later!';
+      closeBtn.onclick = () => modal.classList.add('hidden');
+      actions.appendChild(closeBtn);
+
+      modal.classList.remove('hidden');
+    }
+
+    function triggerNearestInteraction() {
+      if (!world3D || isModalOpen()) return;
+      const nearest = world3D.getNearestInteractable();
+      if (nearest && nearest.userData.action) {
+        nearest.userData.action();
+      } else {
+        showToast('Walk closer to a sibling or glowing prop to interact!', 'bg-white');
+      }
+    }
+
+    function openHubModal(tabName = 'map') {
+      sound.playClick();
+      const modal = document.getElementById('hub-modal');
+      modal.classList.remove('hidden');
+      renderHubTab(tabName);
+    }
+
+    function renderHubTab(tabName) {
+      document.querySelectorAll('.hub-tab').forEach(btn => {
+        if (btn.dataset.tab === tabName) {
+          btn.classList.add('bg-[#ffd23f]');
+          btn.classList.remove('bg-white');
+        } else {
+          btn.classList.remove('bg-[#ffd23f]');
+          btn.classList.add('bg-white');
+        }
+      });
+
+      const content = document.getElementById('hub-content');
+      const p = saves.getCurrent();
+
+      if (tabName === 'map') {
+        content.innerHTML = `
+          <div class="mb-4">
+            <h3 class="font-bangers text-3xl text-[#181828]">🗺️ 1216 FRANKLIN AVENUE DIRECTORY</h3>
+            <p class="text-xs font-bold text-slate-600">Walk freely in 3D or tap any room below for instant dollhouse quick-travel!</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            ${ROOMS.map(r => {
+              const charsInRoom = CHARACTERS.filter(c => c.room === r.id);
+              return `
+                <div class="comic-panel-sm p-3.5 flex flex-col justify-between bg-white">
+                  <div>
+                    <div class="flex items-center justify-between gap-2 mb-1">
+                      <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border border-[#181828]" style="background:${r.color}">
+                        ${r.floor}
+                      </span>
+                      <span class="text-sm">${charsInRoom.map(c => c.emoji).join(' ')}</span>
+                    </div>
+                    <h4 class="font-bangers text-xl tracking-wide">${r.name}</h4>
+                    <p class="text-xs text-slate-600 font-semibold mt-1">${r.desc}</p>
+                  </div>
+                  <button data-goto="${r.id}" class="goto-room-btn comic-btn bg-[#ffd23f] w-full py-1.5 mt-3 text-xs font-extrabold">
+                    Go Here ➜
+                  </button>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+        content.querySelectorAll('.goto-room-btn').forEach(btn => {
+          btn.onclick = () => {
+            world3D.teleportToRoom(btn.dataset.goto);
+            closeAllModals();
+          };
+        });
+      } else if (tabName === 'quests') {
+        content.innerHTML = `
+          <div class="mb-4 flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h3 class="font-bangers text-3xl text-[#181828]">📋 LOUD HOUSE QUEST JOURNAL</h3>
+              <p class="text-xs font-bold text-slate-600">Complete sibling challenges and uncover secret clues.</p>
+            </div>
+            <span class="bg-[#38b000] text-white border-2 border-[#181828] px-3 py-1 rounded-full text-xs font-bold">
+              ${p.completedQuests.length} / ${QUESTS.length} Completed
+            </span>
+          </div>
+          <div class="space-y-3">
+            ${QUESTS.map(q => {
+              const done = p.completedQuests.includes(q.id);
+              return `
+                <div class="comic-panel-sm p-3.5 flex items-center justify-between gap-3 ${done ? 'bg-[#d8f3dc]' : 'bg-white'}">
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="font-bangers text-xl">${done ? '✅' : '⚡'} ${q.title}</span>
+                      <span class="text-[10px] font-extrabold uppercase bg-[#ffd23f] border border-[#181828] px-2 py-0.5 rounded-full">
+                        ${q.giver}
+                      </span>
+                    </div>
+                    <p class="text-xs font-semibold text-slate-700 mt-1">${q.desc}</p>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <div class="font-bangers text-lg text-[#ff6b2b]">+${q.rewardPts} Pts</div>
+                    <div class="text-[10px] font-extrabold uppercase ${done ? 'text-[#38b000]' : 'text-slate-400'}">
+                      ${done ? 'CLAIMED' : 'IN PROGRESS'}
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      } else if (tabName === 'catalog') {
+        content.innerHTML = `
+          <div class="mb-4">
+            <h3 class="font-bangers text-3xl text-[#181828]">🏆 STICKERS, BADGES & SECRET CLUES</h3>
+            <p class="text-xs font-bold text-slate-600">Your persistent household collection for ${p.name}.</p>
+          </div>
+          <div class="comic-panel-sm p-4 bg-[#f3e8ff] mb-5">
+            <h4 class="font-bangers text-xl text-[#845ec2] mb-2">🔍 Secret Mystery Clues (${p.secretClues.length}/4)</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              ${SECRET_CLUES.map(c => {
+                const has = p.secretClues.includes(c.id);
+                return `<div class="px-3 py-2 rounded-xl border-2 border-[#181828] text-xs font-bold ${has ? 'bg-[#ffd23f]' : 'bg-white/60 text-slate-400'}">
+                  ${has ? '✅ ' + c.label : '❓ Undiscovered Clue — Inspect glowing room props!'}
+                </div>`;
+              }).join('')}
+            </div>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            ${BADGES.map(b => {
+              const unlocked = p.badges.includes(b.id);
+              return `
+                <div class="comic-panel-sm p-3 text-center ${unlocked ? 'bg-[#fff8e7]' : 'bg-slate-200 opacity-60'}">
+                  <div class="text-4xl mb-1">${unlocked ? b.icon : '🔒'}</div>
+                  <div class="font-bangers text-lg leading-tight">${b.name}</div>
+                  <p class="text-[11px] font-semibold text-slate-600 mt-1">${b.desc}</p>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      } else if (tabName === 'settings') {
+        content.innerHTML = `
+          <div class="max-w-lg mx-auto space-y-4">
+            <h3 class="font-bangers text-3xl text-[#181828]">⚙️ AUDIO & PROFILE CONTROLS</h3>
+            <div class="comic-panel-sm p-4 bg-white space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-sm">Master Sound Effects</span>
+                <button id="set-sfx-toggle" class="comic-btn px-4 py-1.5 text-xs ${sound.enabled ? 'bg-[#38b000] text-white' : 'bg-slate-300'}">
+                  ${sound.enabled ? 'ON 🔊' : 'MUTED 🔇'}
+                </button>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-sm">Sitcom Background Music</span>
+                <button id="set-bgm-toggle" class="comic-btn px-4 py-1.5 text-xs ${sound.musicEnabled ? 'bg-[#1ecbe1]' : 'bg-slate-300'}">
+                  ${sound.musicEnabled ? 'ON 🎵' : 'OFF'}
+                </button>
+              </div>
+              <div>
+                <label class="block text-xs font-bold mb-1">SFX Volume</label>
+                <input id="set-sfx-vol" type="range" min="0" max="1" step="0.1" value="${sound.sfxVol}" class="w-full" />
+              </div>
+            </div>
+            <div class="comic-panel-sm p-4 bg-[#fff8e7] flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div class="font-bold text-sm">Playing as: ${p.name}</div>
+                <div class="text-xs text-slate-600">Switch profiles or start a new houseguest pass</div>
+              </div>
+              <button id="btn-switch-profile" class="comic-btn bg-[#ff6b2b] text-white px-4 py-2 text-xs font-extrabold">
+                Switch Profile 🔄
+              </button>
+            </div>
+          </div>
+        `;
+        document.getElementById('set-sfx-toggle').onclick = () => {
+          sound.enabled = !sound.enabled;
+          renderHubTab('settings');
+        };
+        document.getElementById('set-bgm-toggle').onclick = () => {
+          sound.musicEnabled = !sound.musicEnabled;
+          renderHubTab('settings');
+        };
+        document.getElementById('set-sfx-vol').oninput = (e) => {
+          sound.sfxVol = parseFloat(e.target.value);
+        };
+        document.getElementById('btn-switch-profile').onclick = () => {
+          closeAllModals();
+          document.getElementById('game-hud').classList.add('hidden');
+          renderProfilesSlate();
+          document.getElementById('title-screen').classList.remove('hidden');
+        };
+      }
+    }
+
+    function closeAllModals() {
+      miniGames.stopAll();
+      document.getElementById('dialogue-modal').classList.add('hidden');
+      document.getElementById('minigame-modal').classList.add('hidden');
+      document.getElementById('hub-modal').classList.add('hidden');
+    }
+
+    // =========================================================================
+    // PROFILE SELECTION SLATE & STARTUP FLOW
+    // =========================================================================
+    let selectedSwatchColor = '#ff6b2b';
+
+    function renderProfilesSlate() {
+      const list = document.getElementById('profiles-list');
+      const profiles = Object.values(saves.data.profiles);
+      document.getElementById('profile-count-badge').textContent = `${profiles.length} Save${profiles.length === 1 ? '' : 's'}`;
+
+      if (profiles.length === 0) {
+        list.innerHTML = `
+          <div class="text-center py-8 px-4 bg-[#f8edeb] rounded-2xl border-2 border-dashed border-[#181828]">
+            <div class="text-4xl mb-2">🏠</div>
+            <p class="font-bold text-sm text-slate-700">No houseguest passes yet!</p>
+            <p class="text-xs text-slate-500 mt-1">Create your profile on the right to step inside 1216 Franklin Avenue.</p>
+          </div>
+        `;
+        return;
+      }
+
+      list.innerHTML = profiles
+        .sort((a, b) => new Date(b.lastPlayed) - new Date(a.lastPlayed))
+        .map(prof => {
+          const pct = saves.getCompletionPercent(prof);
+          const roomObj = ROOMS.find(r => r.id === prof.currentRoom) || ROOMS[0];
+          return `
+            <div class="comic-panel-sm p-3.5 bg-white flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-full border-3 border-[#181828] flex items-center justify-center font-bangers text-white text-2xl shadow-[2px_2px_0_#181828]" style="background:${prof.shirtColor}">
+                  ${prof.name[0].toUpperCase()}
+                </div>
+                <div>
+                  <div class="font-bangers text-2xl leading-none">${prof.name}</div>
+                  <div class="text-xs font-bold text-slate-600 mt-1">
+                    📍 ${roomObj.name} • ⚡ ${prof.chaosPoints} Pts • 🏆 ${prof.badges.length} Badges (${pct}%)
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button data-load="${prof.id}" class="load-prof-btn comic-btn bg-[#38b000] text-white px-4 py-2 font-bangers text-lg">
+                  Continue ▶
+                </button>
+                <button data-del="${prof.id}" class="del-prof-btn comic-btn bg-slate-200 px-2.5 py-2 text-xs" title="Delete Save">
+                  🗑️
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+      list.querySelectorAll('.load-prof-btn').forEach(btn => {
+        btn.onclick = () => {
+          const prof = saves.selectProfile(btn.dataset.load);
+          if (prof) enterWorldWithProfile(prof);
+        };
+      });
+
+      list.querySelectorAll('.del-prof-btn').forEach(btn => {
+        btn.onclick = () => {
+          saves.deleteProfile(btn.dataset.del);
+          sound.playClick();
+          renderProfilesSlate();
+        };
+      });
+    }
+
+    function enterWorldWithProfile(profile) {
+      sound.init();
+      sound.startBGM();
+      sound.playSuccess();
+
+      document.getElementById('title-screen').classList.add('hidden');
+      document.getElementById('game-hud').classList.remove('hidden');
+
+      world3D.createPlayerAvatar(profile.shirtColor);
+      if (profile.position) {
+        world3D.playerPos.set(profile.position.x, 0.32, profile.position.z);
+        world3D.playerGroup.position.copy(world3D.playerPos);
+      }
+
+      const room = ROOMS.find(r => r.id === profile.currentRoom) || ROOMS[0];
+      updateRoomHUD(room);
+      refreshHUD();
+
+      if (!profile.lincolnTalked) {
+        profile.lincolnTalked = true;
+        saves.persist();
+        const lincoln = CHARACTERS.find(c => c.id === 'lincoln');
+        setTimeout(() => openCharacterDialogue(lincoln), 500);
+      } else {
+        showToast(`Welcome back to 1216 Franklin Ave, ${profile.name}!`, 'bg-[#ffd23f]');
+      }
+    }
+
+    function setupMobileJoystick() {
+      const zone = document.getElementById('joystick-zone');
+      const knob = document.getElementById('joystick-knob');
+      let active = false;
+
+      const updateStick = (clientX, clientY) => {
+        const rect = zone.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const maxR = rect.width / 2 - 16;
+        let dx = clientX - cx;
+        let dy = clientY - cy;
+        const dist = Math.hypot(dx, dy);
+        if (dist > maxR) {
+          dx = (dx / dist) * maxR;
+          dy = (dy / dist) * maxR;
+        }
+        knob.style.transform = `translate(${dx}px, ${dy}px)`;
+        if (world3D) {
+          world3D.joyVec.x = dx / maxR;
+          world3D.joyVec.y = dy / maxR;
+        }
+      };
+
+      zone.addEventListener('pointerdown', (e) => {
+        active = true;
+        zone.setPointerCapture(e.pointerId);
+        updateStick(e.clientX, e.clientY);
+      });
+
+      zone.addEventListener('pointermove', (e) => {
+        if (!active) return;
+        updateStick(e.clientX, e.clientY);
+      });
+
+      const resetStick = () => {
+        active = false;
+        knob.style.transform = 'translate(0px, 0px)';
+        if (world3D) {
+          world3D.joyVec.x = 0;
+          world3D.joyVec.y = 0;
+        }
+      };
+
+      zone.addEventListener('pointerup', resetStick);
+      zone.addEventListener('pointercancel', resetStick);
+    }
+
+    // =========================================================================
+    // BOOTSTRAP ON WINDOW LOAD
+    // =========================================================================
+    window.onload = function () {
+      const quips = [
+        "Hiding Lincoln's Ace Savvy comics from Lola...",
+        "Tuning Luna's triple-stack Marshall amplifiers...",
+        "Quarantining Lisa's glowing isotope beakers...",
+        "Lining up all 11 chairs at the dining table...",
+        "Starting up Vanzilla on Clyde Street!"
+      ];
+      let step = 0;
+      const bar = document.getElementById('loading-bar');
+      const quipEl = document.getElementById('loading-quip');
+
+      // Initialize 3D World immediately in background
+      world3D = new World3D(document.getElementById('game-canvas'));
+      world3D.render();
+
+      const loadTimer = setInterval(() => {
+        step++;
+        bar.style.width = Math.min(100, step * 22) + '%';
+        if (quips[step - 1]) quipEl.textContent = quips[step - 1];
+        if (step >= 5) {
+          clearInterval(loadTimer);
+          setTimeout(() => {
+            const loader = document.getElementById('loading-screen');
+            loader.style.opacity = '0';
+            setTimeout(() => {
+              loader.classList.add('hidden');
+              renderProfilesSlate();
+              document.getElementById('title-screen').classList.remove('hidden');
+            }, 450);
+          }, 250);
+        }
+      }, 280);
+
+      // Color Swatch Selection
+      document.querySelectorAll('.color-swatch').forEach(btn => {
+        btn.onclick = () => {
+          selectedSwatchColor = btn.dataset.color;
+          document.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('ring-4', 'ring-[#181828]'));
+          btn.classList.add('ring-4', 'ring-[#181828]');
+          sound.playClick();
+        };
+      });
+
+      // Create Profile Button
+      document.getElementById('btn-create-profile').onclick = () => {
+        const nameInput = document.getElementById('new-profile-name').value;
+        const prof = saves.createProfile(nameInput, selectedSwatchColor);
+        enterWorldWithProfile(prof);
+      };
+
+      // Title Sound Toggle
+      document.getElementById('btn-title-audio').onclick = (e) => {
+        sound.enabled = !sound.enabled;
+        sound.init();
+        sound.playClick();
+        e.target.textContent = sound.enabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
+      };
+
+      // HUD Buttons
+      document.querySelectorAll('.hud-nav-btn').forEach(btn => {
+        btn.onclick = () => openHubModal(btn.dataset.modal);
+      });
+
+      document.querySelectorAll('.hub-tab').forEach(btn => {
+        btn.onclick = () => renderHubTab(btn.dataset.tab);
+      });
+
+      document.getElementById('btn-close-hub').onclick = closeAllModals;
+      document.getElementById('btn-close-dialogue').onclick = closeAllModals;
+      document.getElementById('btn-exit-minigame').onclick = closeAllModals;
+
+      document.getElementById('btn-camera-toggle').onclick = () => world3D.cycleCamera();
+      document.getElementById('btn-mobile-cam').onclick = () => world3D.cycleCamera();
+      document.getElementById('btn-interact-prompt').onclick = triggerNearestInteraction;
+      document.getElementById('btn-mobile-act').onclick = triggerNearestInteraction;
+
+      setupMobileJoystick();
+    };
+  </script>
+</body>
+</html>
